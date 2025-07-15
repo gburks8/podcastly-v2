@@ -17,6 +17,31 @@ if (process.env.STRIPE_SECRET_KEY) {
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 }
 
+// Function to get video metadata
+async function getVideoMetadata(videoPath: string): Promise<{ width: number; height: number; aspectRatio: number }> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        console.error('Error getting video metadata:', err);
+        reject(err);
+        return;
+      }
+      
+      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
+      if (!videoStream || !videoStream.width || !videoStream.height) {
+        reject(new Error('No video stream found'));
+        return;
+      }
+      
+      const width = videoStream.width;
+      const height = videoStream.height;
+      const aspectRatio = width / height;
+      
+      resolve({ width, height, aspectRatio });
+    });
+  });
+}
+
 // Function to generate video thumbnail
 async function generateVideoThumbnail(videoPath: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -320,18 +345,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subfolder = 'headshots/';
       }
 
-      // Generate thumbnail for video files if not provided
+      // Generate thumbnail and extract metadata for video files
       let thumbnailUrl = null;
+      let width = null;
+      let height = null;
+      let aspectRatio = null;
+      
       if (thumbnailFile) {
         thumbnailUrl = `/uploads/thumbnails/${thumbnailFile.filename}`;
       } else if (req.body.type === 'video' && mainFile) {
         try {
-          // Generate thumbnail from video
+          // Get video metadata first
           const videoPath = path.join('uploads', subfolder, mainFile.filename);
+          const metadata = await getVideoMetadata(videoPath);
+          width = metadata.width;
+          height = metadata.height;
+          aspectRatio = metadata.aspectRatio;
+          
+          // Generate thumbnail from video
           thumbnailUrl = await generateVideoThumbnail(videoPath);
         } catch (error) {
-          console.error('Failed to generate video thumbnail:', error);
-          // Continue without thumbnail if generation fails
+          console.error('Failed to process video:', error);
+          // Continue without thumbnail and metadata if processing fails
         }
       }
 
@@ -345,6 +380,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: `/uploads/${subfolder}${mainFile.filename}`,
         duration: req.body.duration || null,
         thumbnailUrl: thumbnailUrl,
+        width: width,
+        height: height,
+        aspectRatio: aspectRatio,
         price: req.body.price || "25.00",
       };
 

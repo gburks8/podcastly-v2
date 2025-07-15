@@ -54,6 +54,9 @@ export const contentItems = pgTable("content_items", {
   fileUrl: varchar("file_url").notNull(),
   duration: varchar("duration"), // for videos
   thumbnailUrl: varchar("thumbnail_url"),
+  width: integer("width"), // Video/image width in pixels
+  height: integer("height"), // Video/image height in pixels
+  aspectRatio: decimal("aspect_ratio", { precision: 5, scale: 3 }), // width/height ratio
   price: decimal("price", { precision: 10, scale: 2 }).default("25.00"), // Individual price for premium content
   createdAt: timestamp("created_at").defaultNow(),
 });

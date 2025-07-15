@@ -116,6 +116,25 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     window.location.href = `/purchase/${content.id}`;
   };
 
+  // Calculate dynamic container style based on aspect ratio
+  const getContainerStyle = () => {
+    if (content.type !== "video" || !content.aspectRatio) {
+      // Default height for non-videos or videos without aspect ratio data
+      return { height: isCompact ? '96px' : '128px' };
+    }
+
+    const aspectRatio = parseFloat(content.aspectRatio.toString());
+    const baseWidth = 250; // Approximate card width
+    const calculatedHeight = baseWidth / aspectRatio;
+    
+    // Constrain height between reasonable bounds
+    const minHeight = isCompact ? 80 : 100;
+    const maxHeight = isCompact ? 120 : 180;
+    const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+    
+    return { height: `${constrainedHeight}px` };
+  };
+
   const canDownload = isFree || hasAccess;
   const isLocked = !canDownload;
 
@@ -123,7 +142,8 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     <Card className={`overflow-hidden hover:shadow-lg transition-shadow duration-300 ${isLocked ? 'relative' : ''}`}>
       <div className="relative">
         <div 
-          className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''} bg-gray-100`}
+          className={`overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''} bg-gray-100`}
+          style={getContainerStyle()}
           onClick={content.type === "video" ? () => {
             console.log('Thumbnail clicked, opening preview for:', content.title);
             setShowVideoPreview(true);
