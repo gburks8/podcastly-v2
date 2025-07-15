@@ -8,6 +8,16 @@ MediaPro is a full-stack web application designed for real estate agents to acce
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**July 15, 2025**
+- Replaced Replit Auth with custom email/password authentication system
+- Added password hashing using Node.js scrypt for security
+- Updated database schema to support custom user accounts
+- Fixed authentication loops and loading screen issues
+- Created admin account: grantburks@optikoproductions.com (Admin123)
+- Added is_admin column to users table for role-based access
+
 ## System Architecture
 
 The application follows a modern full-stack architecture with a clear separation between client and server:

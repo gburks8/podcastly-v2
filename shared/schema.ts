@@ -37,6 +37,7 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   freeVideoSelectionsUsed: integer("free_video_selections_used").default(0),
   freeHeadshotSelectionsUsed: integer("free_headshot_selections_used").default(0),
+  isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
