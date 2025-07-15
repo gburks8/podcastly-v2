@@ -42,7 +42,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       } else {
         toast({
@@ -84,7 +84,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       } else {
         toast({

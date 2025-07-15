@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import Stripe from "stripe";
 import multer from "multer";
 import path from "path";
@@ -33,27 +33,29 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+  // Auth routes (handled in auth.ts)
+  app.get('/api/user', (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.sendStatus(401);
     }
+    const user = req.user;
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    });
   });
 
   // Content routes
   app.get('/api/content', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const allContent = await storage.getContentItems(userId);
       res.json(allContent);
     } catch (error) {
@@ -64,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/content/selections', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const freeSelections = await storage.getFreeSelections(userId);
       res.json(freeSelections);
     } catch (error) {
@@ -75,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/content/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
       const hasAccess = await storage.hasDownloadAccess(userId, contentId);
@@ -97,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/content/:id/select-free', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
       await storage.selectFreeContent(userId, contentId);
@@ -110,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/content/:id/download', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
       const hasAccess = await storage.hasDownloadAccess(userId, contentId);
@@ -141,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/downloads/history', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const history = await storage.getDownloadHistory(userId);
       res.json(history);
     } catch (error) {
@@ -157,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Payment processing not configured" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
       const user = await storage.getUser(userId);

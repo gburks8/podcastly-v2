@@ -92,7 +92,7 @@ export default function Purchase() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = "/auth";
       }, 500);
       return;
     }
@@ -105,9 +105,7 @@ export default function Purchase() {
 
   const createPaymentMutation = useMutation({
     mutationFn: async (contentId: number) => {
-      const response = await apiRequest("POST", "/api/create-payment-intent", {
-        contentId,
-      });
+      const response = await apiRequest("POST", `/api/content/${contentId}/create-payment-intent`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -121,7 +119,7 @@ export default function Purchase() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       } else {
         toast({

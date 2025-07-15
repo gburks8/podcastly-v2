@@ -41,7 +41,7 @@ export default function Admin() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       }
     },
@@ -58,7 +58,7 @@ export default function Admin() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       }
     },
@@ -104,7 +104,7 @@ export default function Admin() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       } else {
         toast({
@@ -135,7 +135,7 @@ export default function Admin() {
           variant: "destructive",
         });
         setTimeout(() => {
-          window.location.href = "/api/login";
+          window.location.href = "/auth";
         }, 500);
       } else {
         toast({

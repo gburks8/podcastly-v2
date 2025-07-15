@@ -104,7 +104,7 @@ export default function Checkout() {
             variant: "destructive",
           });
           setTimeout(() => {
-            window.location.href = "/api/login";
+            window.location.href = "/auth";
           }, 500);
         } else {
           toast({
