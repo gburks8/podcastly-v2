@@ -19,15 +19,43 @@ if (process.env.STRIPE_SECRET_KEY) {
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, 'uploads/');
+      // Organize uploads by content type
+      if (file.fieldname === 'video') {
+        cb(null, 'uploads/videos/');
+      } else if (file.fieldname === 'headshot' || file.fieldname === 'image') {
+        cb(null, 'uploads/headshots/');
+      } else if (file.fieldname === 'thumbnail') {
+        cb(null, 'uploads/thumbnails/');
+      } else {
+        cb(null, 'uploads/');
+      }
     },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+      cb(null, `${file.fieldname}-${uniqueSuffix}-${sanitizedName}`);
     }
   }),
+  fileFilter: (req, file, cb) => {
+    // Allow videos, images, and thumbnails
+    if (file.fieldname === 'video') {
+      if (file.mimetype.startsWith('video/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only video files are allowed for video uploads'));
+      }
+    } else if (file.fieldname === 'headshot' || file.fieldname === 'image' || file.fieldname === 'thumbnail') {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed for image uploads'));
+      }
+    } else {
+      cb(null, true);
+    }
+  },
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit
+    fileSize: 500 * 1024 * 1024, // 500MB limit for videos
   },
 });
 
@@ -241,23 +269,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/content', isAuthenticated, upload.single('file'), async (req: any, res) => {
+  app.post('/api/admin/content', isAuthenticated, upload.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'headshot', maxCount: 1 },
+    { name: 'image', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 }
+  ]), async (req: any, res) => {
     try {
-      const file = req.file;
-      if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const mainFile = files['video']?.[0] || files['headshot']?.[0] || files['image']?.[0];
+      const thumbnailFile = files['thumbnail']?.[0];
+
+      if (!mainFile) {
+        return res.status(400).json({ message: "No main content file uploaded" });
+      }
+
+      // Determine the correct subfolder based on file type
+      let subfolder = '';
+      if (files['video']) {
+        subfolder = 'videos/';
+      } else if (files['headshot'] || files['image']) {
+        subfolder = 'headshots/';
       }
 
       const contentData = {
-        userId: req.body.userId,
+        userId: req.body.userId || req.user.id, // Default to current user if not specified
         title: req.body.title,
         description: req.body.description,
         type: req.body.type,
-        category: req.body.category,
-        filename: file.filename,
-        fileUrl: `/uploads/${file.filename}`,
-        duration: req.body.duration,
-        thumbnailUrl: req.body.thumbnailUrl,
+        filename: mainFile.filename,
+        fileUrl: `/uploads/${subfolder}${mainFile.filename}`,
+        duration: req.body.duration || null,
+        thumbnailUrl: thumbnailFile ? `/uploads/thumbnails/${thumbnailFile.filename}` : req.body.thumbnailUrl || null,
+        price: req.body.price || "25.00",
       };
 
       const validatedData = insertContentItemSchema.parse(contentData);

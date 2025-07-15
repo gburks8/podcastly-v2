@@ -19,15 +19,14 @@ export default function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedMainFile, setSelectedMainFile] = useState<File | null>(null);
+  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
   const [uploadForm, setUploadForm] = useState({
-    userId: "",
     title: "",
     description: "",
     type: "video",
-    category: "free",
     duration: "",
-    thumbnailUrl: "",
+    price: "25.00",
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
@@ -85,15 +84,14 @@ export default function Admin() {
         description: "Content uploaded successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/content"] });
-      setSelectedFile(null);
+      setSelectedMainFile(null);
+      setSelectedThumbnail(null);
       setUploadForm({
-        userId: "",
         title: "",
         description: "",
         type: "video",
-        category: "free",
         duration: "",
-        thumbnailUrl: "",
+        price: "25.00",
       });
     },
     onError: (error: Error) => {
@@ -147,34 +145,54 @@ export default function Admin() {
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      setSelectedMainFile(file);
       // Auto-detect type based on file extension
       const extension = file.name.split('.').pop()?.toLowerCase();
-      if (['mp4', 'mov', 'avi', 'mkv'].includes(extension || '')) {
+      if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(extension || '')) {
         setUploadForm(prev => ({ ...prev, type: 'video' }));
-      } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
+      } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
         setUploadForm(prev => ({ ...prev, type: 'headshot' }));
       }
+    }
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedThumbnail(file);
     }
   };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedFile) {
+    if (!selectedMainFile) {
       toast({
         title: "Error",
-        description: "Please select a file to upload",
+        description: "Please select a main content file to upload",
         variant: "destructive",
       });
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    
+    // Add main file with appropriate field name
+    if (uploadForm.type === 'video') {
+      formData.append('video', selectedMainFile);
+    } else {
+      formData.append('headshot', selectedMainFile);
+    }
+    
+    // Add thumbnail if provided
+    if (selectedThumbnail) {
+      formData.append('thumbnail', selectedThumbnail);
+    }
+    
+    // Add form data
     Object.entries(uploadForm).forEach(([key, value]) => {
       formData.append(key, value);
     });
@@ -222,34 +240,70 @@ export default function Admin() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleUpload} className="space-y-4">
+                <form onSubmit={handleUpload} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="userId">User</Label>
-                      <Select value={uploadForm.userId} onValueChange={(value) => setUploadForm(prev => ({ ...prev, userId: value }))}>
+                      <Label htmlFor="type">Content Type</Label>
+                      <Select value={uploadForm.type} onValueChange={(value) => setUploadForm(prev => ({ ...prev, type: value }))}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select user" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {users.map((user: User) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.firstName} {user.lastName} ({user.email})
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="video">Video Podcast</SelectItem>
+                          <SelectItem value="headshot">Professional Headshot</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
-                      <Label htmlFor="file">File</Label>
+                      <Label htmlFor="price">Price ($)</Label>
                       <Input
-                        id="file"
-                        type="file"
-                        accept="video/*,image/*"
-                        onChange={handleFileChange}
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={uploadForm.price}
+                        onChange={(e) => setUploadForm(prev => ({ ...prev, price: e.target.value }))}
                         required
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="mainFile">
+                        {uploadForm.type === 'video' ? 'Video File' : 'Headshot Image'}
+                      </Label>
+                      <Input
+                        id="mainFile"
+                        type="file"
+                        accept={uploadForm.type === 'video' ? 'video/*' : 'image/*'}
+                        onChange={handleMainFileChange}
+                        required
+                      />
+                      {selectedMainFile && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Selected: {selectedMainFile.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {uploadForm.type === 'video' && (
+                      <div>
+                        <Label htmlFor="thumbnail">Thumbnail Image (Optional)</Label>
+                        <Input
+                          id="thumbnail"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailChange}
+                        />
+                        {selectedThumbnail && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Selected: {selectedThumbnail.name}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -259,46 +313,19 @@ export default function Admin() {
                         id="title"
                         value={uploadForm.title}
                         onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Enter content title"
                         required
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="type">Type</Label>
-                      <Select value={uploadForm.type} onValueChange={(value) => setUploadForm(prev => ({ ...prev, type: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="video">Video</SelectItem>
-                          <SelectItem value="headshot">Headshot</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="category">Category</Label>
-                      <Select value={uploadForm.category} onValueChange={(value) => setUploadForm(prev => ({ ...prev, category: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="free">Free</SelectItem>
-                          <SelectItem value="premium">Premium</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
                     {uploadForm.type === 'video' && (
                       <div>
-                        <Label htmlFor="duration">Duration (e.g., 1:30)</Label>
+                        <Label htmlFor="duration">Duration (optional)</Label>
                         <Input
                           id="duration"
                           value={uploadForm.duration}
                           onChange={(e) => setUploadForm(prev => ({ ...prev, duration: e.target.value }))}
-                          placeholder="1:30"
+                          placeholder="e.g., 25:30"
                         />
                       </div>
                     )}
@@ -310,17 +337,8 @@ export default function Admin() {
                       id="description"
                       value={uploadForm.description}
                       onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Content description..."
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="thumbnailUrl">Thumbnail URL (optional)</Label>
-                    <Input
-                      id="thumbnailUrl"
-                      value={uploadForm.thumbnailUrl}
-                      onChange={(e) => setUploadForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
-                      placeholder="https://example.com/thumbnail.jpg"
+                      placeholder="Enter a description for this content..."
+                      rows={3}
                     />
                   </div>
 
