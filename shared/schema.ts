@@ -28,7 +28,7 @@ export const sessions = pgTable(
 
 // User storage table with custom authentication
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull().default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().notNull().default(sql`gen_random_uuid()::text`),
   email: varchar("email").unique().notNull(),
   password: varchar("password").notNull(),
   firstName: varchar("first_name").notNull(),
