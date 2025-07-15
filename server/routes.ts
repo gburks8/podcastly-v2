@@ -297,6 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: req.body.title,
         description: req.body.description,
         type: req.body.type,
+        category: req.body.category || "premium", // Default to premium for uploaded content
         filename: mainFile.filename,
         fileUrl: `/uploads/${subfolder}${mainFile.filename}`,
         duration: req.body.duration || null,

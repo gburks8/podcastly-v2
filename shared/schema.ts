@@ -49,6 +49,7 @@ export const contentItems = pgTable("content_items", {
   title: varchar("title").notNull(),
   description: text("description"),
   type: varchar("type").notNull(), // 'video' or 'headshot'
+  category: varchar("category").notNull(), // 'free' or 'premium'
   filename: varchar("filename").notNull(),
   fileUrl: varchar("file_url").notNull(),
   duration: varchar("duration"), // for videos
@@ -138,7 +139,7 @@ export const freeSelectionsRelations = relations(freeSelections, ({ one }) => ({
 
 // Schemas
 export const insertUserSchema = createInsertSchema(users);
-export const insertContentItemSchema = createInsertSchema(contentItems);
+export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true });
 export const insertPaymentSchema = createInsertSchema(payments);
 export const insertDownloadSchema = createInsertSchema(downloads);
 export const insertFreeSelectionSchema = createInsertSchema(freeSelections);
