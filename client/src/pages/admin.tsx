@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -10,24 +10,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2 } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle } from "lucide-react";
 import type { User, ContentItem } from "@shared/schema";
 
 export default function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedMainFile, setSelectedMainFile] = useState<File | null>(null);
-  const [selectedThumbnail, setSelectedThumbnail] = useState<File | null>(null);
-  const [uploadForm, setUploadForm] = useState({
-    title: "",
-    description: "",
-    type: "video",
-    duration: "",
-    price: "25.00",
-  });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadQueue, setUploadQueue] = useState<Array<{
+    file: File;
+    title: string;
+    description: string;
+    duration: string;
+    price: string;
+    progress: number;
+    status: 'pending' | 'uploading' | 'completed' | 'error';
+  }>>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [defaultPrice, setDefaultPrice] = useState("25.00");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["/api/admin/users"],
@@ -63,56 +68,42 @@ export default function Admin() {
     },
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
+  const uploadSingleFile = async (fileData: typeof uploadQueue[0], index: number) => {
+    try {
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'uploading', progress: 0 } : item
+      ));
+
+      const formData = new FormData();
+      formData.append('video', fileData.file);
+      formData.append('title', fileData.title);
+      formData.append('description', fileData.description);
+      formData.append('type', 'video');
+      formData.append('duration', fileData.duration);
+      formData.append('price', fileData.price);
+
       const response = await fetch("/api/admin/content", {
         method: "POST",
         body: formData,
         credentials: "include",
       });
-      
+
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error);
+        throw new Error(await response.text());
       }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Content uploaded successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/content"] });
-      setSelectedMainFile(null);
-      setSelectedThumbnail(null);
-      setUploadForm({
-        title: "",
-        description: "",
-        type: "video",
-        duration: "",
-        price: "25.00",
-      });
-    },
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 500);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to upload content: " + error.message,
-          variant: "destructive",
-        });
-      }
-    },
-  });
+
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'completed', progress: 100 } : item
+      ));
+
+      return await response.json();
+    } catch (error: any) {
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'error', progress: 0 } : item
+      ));
+      throw error;
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (contentId: number) => {
@@ -145,59 +136,89 @@ export default function Admin() {
     },
   });
 
-  const handleMainFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedMainFile(file);
-      // Auto-detect type based on file extension
-      const extension = file.name.split('.').pop()?.toLowerCase();
-      if (['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(extension || '')) {
-        setUploadForm(prev => ({ ...prev, type: 'video' }));
-      } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-        setUploadForm(prev => ({ ...prev, type: 'headshot' }));
-      }
-    }
-  };
-
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedThumbnail(file);
-    }
-  };
-
-  const handleUpload = async (e: React.FormEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragOver(false);
     
-    if (!selectedMainFile) {
+    const files = Array.from(e.dataTransfer.files);
+    const videoFiles = files.filter(file => 
+      file.type.startsWith('video/') || 
+      ['mp4', 'mov', 'avi', 'mkv', 'webm'].includes(file.name.split('.').pop()?.toLowerCase() || '')
+    );
+    
+    if (videoFiles.length === 0) {
       toast({
-        title: "Error",
-        description: "Please select a main content file to upload",
+        title: "Invalid files",
+        description: "Please drop video files only",
         variant: "destructive",
       });
       return;
     }
+    
+    addFilesToQueue(videoFiles);
+  }, []);
 
-    const formData = new FormData();
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    addFilesToQueue(files);
+  };
+
+  const addFilesToQueue = (files: File[]) => {
+    const newItems = files.map(file => ({
+      file,
+      title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+      description: "",
+      duration: "",
+      price: defaultPrice,
+      progress: 0,
+      status: 'pending' as const,
+    }));
     
-    // Add main file with appropriate field name
-    if (uploadForm.type === 'video') {
-      formData.append('video', selectedMainFile);
-    } else {
-      formData.append('headshot', selectedMainFile);
+    setUploadQueue(prev => [...prev, ...newItems]);
+  };
+
+  const updateQueueItem = (index: number, updates: Partial<typeof uploadQueue[0]>) => {
+    setUploadQueue(prev => prev.map((item, i) => 
+      i === index ? { ...item, ...updates } : item
+    ));
+  };
+
+  const removeQueueItem = (index: number) => {
+    setUploadQueue(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadAllFiles = async () => {
+    const pendingItems = uploadQueue.filter(item => item.status === 'pending');
+    
+    for (let i = 0; i < uploadQueue.length; i++) {
+      if (uploadQueue[i].status === 'pending') {
+        try {
+          await uploadSingleFile(uploadQueue[i], i);
+        } catch (error: any) {
+          toast({
+            title: "Upload failed",
+            description: `Failed to upload ${uploadQueue[i].title}: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+      }
     }
     
-    // Add thumbnail if provided
-    if (selectedThumbnail) {
-      formData.append('thumbnail', selectedThumbnail);
-    }
-    
-    // Add form data
-    Object.entries(uploadForm).forEach(([key, value]) => {
-      formData.append(key, value);
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/content"] });
+    toast({
+      title: "Upload complete",
+      description: "All files have been processed",
     });
-
-    uploadMutation.mutate(formData);
   };
 
   if (isLoading || !isAuthenticated) {
@@ -232,122 +253,196 @@ export default function Admin() {
           </TabsList>
 
           <TabsContent value="upload">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Upload New Content
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleUpload} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* Upload Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    Video Upload Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
                     <div>
-                      <Label htmlFor="type">Content Type</Label>
-                      <Select value={uploadForm.type} onValueChange={(value) => setUploadForm(prev => ({ ...prev, type: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="video">Video Podcast</SelectItem>
-                          <SelectItem value="headshot">Professional Headshot</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="price">Price ($)</Label>
+                      <Label htmlFor="defaultPrice">Default Price ($)</Label>
                       <Input
-                        id="price"
+                        id="defaultPrice"
                         type="number"
                         step="0.01"
                         min="0"
-                        value={uploadForm.price}
-                        onChange={(e) => setUploadForm(prev => ({ ...prev, price: e.target.value }))}
-                        required
+                        value={defaultPrice}
+                        onChange={(e) => setDefaultPrice(e.target.value)}
+                        className="w-32"
                       />
                     </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="mainFile">
-                        {uploadForm.type === 'video' ? 'Video File' : 'Headshot Image'}
-                      </Label>
-                      <Input
-                        id="mainFile"
-                        type="file"
-                        accept={uploadForm.type === 'video' ? 'video/*' : 'image/*'}
-                        onChange={handleMainFileChange}
-                        required
-                      />
-                      {selectedMainFile && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Selected: {selectedMainFile.name}
+              {/* Drag and Drop Zone */}
+              <Card>
+                <CardContent className="p-0">
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+                      isDragOver 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                  >
+                    <div className="flex flex-col items-center gap-4">
+                      <FileVideo className="w-12 h-12 text-gray-400" />
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2">
+                          Drop video files here or click to browse
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          Support for MP4, MOV, AVI, MKV, and WebM files
                         </p>
-                      )}
-                    </div>
-
-                    {uploadForm.type === 'video' && (
-                      <div>
-                        <Label htmlFor="thumbnail">Thumbnail Image (Optional)</Label>
-                        <Input
-                          id="thumbnail"
+                        <Button 
+                          onClick={() => fileInputRef.current?.click()}
+                          variant="outline"
+                        >
+                          Select Files
+                        </Button>
+                        <input
+                          ref={fileInputRef}
                           type="file"
-                          accept="image/*"
-                          onChange={handleThumbnailChange}
+                          multiple
+                          accept="video/*"
+                          className="hidden"
+                          onChange={handleFileSelect}
                         />
-                        {selectedThumbnail && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            Selected: {selectedThumbnail.name}
-                          </p>
-                        )}
                       </div>
-                    )}
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="title">Title</Label>
-                      <Input
-                        id="title"
-                        value={uploadForm.title}
-                        onChange={(e) => setUploadForm(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Enter content title"
-                        required
-                      />
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                    {uploadForm.type === 'video' && (
-                      <div>
-                        <Label htmlFor="duration">Duration (optional)</Label>
-                        <Input
-                          id="duration"
-                          value={uploadForm.duration}
-                          onChange={(e) => setUploadForm(prev => ({ ...prev, duration: e.target.value }))}
-                          placeholder="e.g., 25:30"
-                        />
+              {/* Upload Queue */}
+              {uploadQueue.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Video className="w-5 h-5" />
+                        Upload Queue ({uploadQueue.length} files)
+                      </CardTitle>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={uploadAllFiles}
+                          disabled={uploadQueue.every(item => item.status !== 'pending')}
+                        >
+                          Upload All
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => setUploadQueue([])}
+                        >
+                          Clear Queue
+                        </Button>
                       </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={uploadForm.description}
-                      onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter a description for this content..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <Button type="submit" disabled={uploadMutation.isPending}>
-                    {uploadMutation.isPending ? "Uploading..." : "Upload Content"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {uploadQueue.map((item, index) => (
+                        <div key={index} className="border rounded-lg p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0">
+                              {item.status === 'completed' ? (
+                                <CheckCircle className="w-6 h-6 text-green-500" />
+                              ) : item.status === 'error' ? (
+                                <X className="w-6 h-6 text-red-500" />
+                              ) : item.status === 'uploading' ? (
+                                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <FileVideo className="w-6 h-6 text-gray-400" />
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 space-y-3">
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <div>
+                                  <Label>Title</Label>
+                                  <Input
+                                    value={item.title}
+                                    onChange={(e) => updateQueueItem(index, { title: e.target.value })}
+                                    disabled={item.status !== 'pending'}
+                                  />
+                                </div>
+                                <div>
+                                  <Label>Price ($)</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price}
+                                    onChange={(e) => updateQueueItem(index, { price: e.target.value })}
+                                    disabled={item.status !== 'pending'}
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="grid md:grid-cols-2 gap-3">
+                                <div>
+                                  <Label>Duration (optional)</Label>
+                                  <Input
+                                    value={item.duration}
+                                    onChange={(e) => updateQueueItem(index, { duration: e.target.value })}
+                                    placeholder="e.g., 25:30"
+                                    disabled={item.status !== 'pending'}
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeQueueItem(index)}
+                                    disabled={item.status === 'uploading'}
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Remove
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label>Description</Label>
+                                <Textarea
+                                  value={item.description}
+                                  onChange={(e) => updateQueueItem(index, { description: e.target.value })}
+                                  placeholder="Enter description..."
+                                  rows={2}
+                                  disabled={item.status !== 'pending'}
+                                />
+                              </div>
+                              
+                              {item.status === 'uploading' && (
+                                <div>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span>Uploading...</span>
+                                    <span>{item.progress}%</span>
+                                  </div>
+                                  <Progress value={item.progress} />
+                                </div>
+                              )}
+                              
+                              <div className="text-sm text-gray-600">
+                                File: {item.file.name} ({(item.file.size / 1024 / 1024).toFixed(1)} MB)
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="users">
