@@ -31,7 +31,7 @@ async function generateVideoThumbnail(videoPath: string): Promise<string> {
         timestamps: ['00:00:01'], // Take screenshot at 1 second
         filename: thumbnailFilename,
         folder: 'uploads/thumbnails/',
-        size: '320x240'
+        size: '320x180' // 16:9 aspect ratio for better video thumbnails
       })
       .on('end', () => {
         resolve(`/uploads/thumbnails/${thumbnailFilename}`);

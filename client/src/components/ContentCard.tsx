@@ -123,7 +123,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     <Card className={`overflow-hidden hover:shadow-lg transition-shadow duration-300 ${isLocked ? 'relative' : ''}`}>
       <div className="relative">
         <div 
-          className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''}`}
+          className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''} bg-gray-100`}
           onClick={content.type === "video" ? () => {
             console.log('Thumbnail clicked, opening preview for:', content.title);
             setShowVideoPreview(true);
@@ -133,7 +133,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             <img 
               src={content.thumbnailUrl} 
               alt={content.title} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
