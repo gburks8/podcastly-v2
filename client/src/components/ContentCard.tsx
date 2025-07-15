@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Download, Lock, Play, Image, Clock, Video } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
+import { VideoPreviewModal } from "./VideoPreviewModal";
 
 interface ContentCardProps {
   content: ContentItem;
@@ -21,6 +22,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
 
   const selectFreeMutation = useMutation({
     mutationFn: async (contentId: number) => {
@@ -120,7 +122,10 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   return (
     <Card className={`overflow-hidden hover:shadow-lg transition-shadow duration-300 ${isLocked ? 'relative' : ''}`}>
       <div className="relative">
-        <div className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden`}>
+        <div 
+          className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''}`}
+          onClick={content.type === "video" ? () => setShowVideoPreview(true) : undefined}
+        >
           {content.thumbnailUrl ? (
             <img 
               src={content.thumbnailUrl} 
@@ -139,9 +144,14 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
         </div>
 
         {/* Overlay for videos */}
-        {content.type === "video" && !isLocked && (
-          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-            <Play className="text-white text-2xl" />
+        {content.type === "video" && (
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer hover:bg-opacity-50 transition-all"
+            onClick={() => setShowVideoPreview(true)}
+          >
+            <div className="bg-white bg-opacity-90 rounded-full p-3">
+              <Play className="text-black text-xl" fill="currentColor" />
+            </div>
           </div>
         )}
 
@@ -238,6 +248,19 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
           </div>
         )}
       </CardContent>
+
+      {/* Video Preview Modal */}
+      {content.type === "video" && (
+        <VideoPreviewModal
+          isOpen={showVideoPreview}
+          onClose={() => setShowVideoPreview(false)}
+          video={content}
+          hasAccess={canDownload}
+          onDownload={handleDownload}
+          onSelectFree={canSelectFree ? handleSelectFree : undefined}
+          canSelectFree={canSelectFree}
+        />
+      )}
     </Card>
   );
 }
