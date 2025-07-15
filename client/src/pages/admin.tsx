@@ -74,6 +74,16 @@ export default function Admin() {
         i === index ? { ...item, status: 'uploading', progress: 0 } : item
       ));
 
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadQueue(prev => prev.map((item, i) => {
+          if (i === index && item.status === 'uploading' && item.progress < 90) {
+            return { ...item, progress: Math.min(item.progress + Math.random() * 15, 90) };
+          }
+          return item;
+        }));
+      }, 500);
+
       const formData = new FormData();
       formData.append('video', fileData.file);
       formData.append('title', fileData.title);
@@ -88,8 +98,11 @@ export default function Admin() {
         credentials: "include",
       });
 
+      clearInterval(progressInterval);
+
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorText = await response.text();
+        throw new Error(errorText);
       }
 
       setUploadQueue(prev => prev.map((item, i) => 
