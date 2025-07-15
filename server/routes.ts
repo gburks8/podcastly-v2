@@ -8,11 +8,39 @@ import multer from "multer";
 import path from "path";
 import { insertContentItemSchema } from "@shared/schema";
 import { z } from "zod";
+import ffmpeg from "fluent-ffmpeg";
+import fs from "fs/promises";
 
 // Only initialize Stripe if secret key is available
 let stripe: Stripe | null = null;
 if (process.env.STRIPE_SECRET_KEY) {
   stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+}
+
+// Function to generate video thumbnail
+async function generateVideoThumbnail(videoPath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const thumbnailFilename = `thumb-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+    const thumbnailPath = path.join('uploads/thumbnails', thumbnailFilename);
+    
+    // Ensure thumbnails directory exists
+    fs.mkdir('uploads/thumbnails', { recursive: true }).catch(() => {});
+    
+    ffmpeg(videoPath)
+      .screenshots({
+        timestamps: ['00:00:01'], // Take screenshot at 1 second
+        filename: thumbnailFilename,
+        folder: 'uploads/thumbnails/',
+        size: '320x240'
+      })
+      .on('end', () => {
+        resolve(`/uploads/thumbnails/${thumbnailFilename}`);
+      })
+      .on('error', (err) => {
+        console.error('Error generating thumbnail:', err);
+        reject(err);
+      });
+  });
 }
 
 // Configure multer for file uploads
@@ -292,6 +320,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subfolder = 'headshots/';
       }
 
+      // Generate thumbnail for video files if not provided
+      let thumbnailUrl = null;
+      if (thumbnailFile) {
+        thumbnailUrl = `/uploads/thumbnails/${thumbnailFile.filename}`;
+      } else if (req.body.type === 'video' && mainFile) {
+        try {
+          // Generate thumbnail from video
+          const videoPath = path.join('uploads', subfolder, mainFile.filename);
+          thumbnailUrl = await generateVideoThumbnail(videoPath);
+        } catch (error) {
+          console.error('Failed to generate video thumbnail:', error);
+          // Continue without thumbnail if generation fails
+        }
+      }
+
       const contentData = {
         userId: req.body.userId || req.user.id, // Default to current user if not specified
         title: req.body.title,
@@ -301,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: mainFile.filename,
         fileUrl: `/uploads/${subfolder}${mainFile.filename}`,
         duration: req.body.duration || null,
-        thumbnailUrl: thumbnailFile ? `/uploads/thumbnails/${thumbnailFile.filename}` : req.body.thumbnailUrl || null,
+        thumbnailUrl: thumbnailUrl,
         price: req.body.price || "25.00",
       };
 
