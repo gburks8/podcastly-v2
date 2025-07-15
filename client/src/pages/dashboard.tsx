@@ -135,11 +135,9 @@ export default function Dashboard() {
               <span className="text-sm text-gray-600">
                 {user?.firstName} {user?.lastName}
               </span>
-              <img 
-                className="h-8 w-8 rounded-full object-cover" 
-                src={user?.profileImageUrl || "https://via.placeholder.com/32"} 
-                alt="Profile" 
-              />
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-medium">
+                {user?.firstName ? user.firstName.charAt(0).toUpperCase() : 'U'}
+              </div>
               <Button 
                 variant="ghost" 
                 size="sm"
