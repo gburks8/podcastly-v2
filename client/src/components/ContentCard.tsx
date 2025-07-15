@@ -124,16 +124,19 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
       <div className="relative">
         <div 
           className={`${isCompact ? 'h-24' : 'h-32'} overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''}`}
-          onClick={content.type === "video" ? () => setShowVideoPreview(true) : undefined}
+          onClick={content.type === "video" ? () => {
+            console.log('Thumbnail clicked, opening preview for:', content.title);
+            setShowVideoPreview(true);
+          } : undefined}
         >
           {content.thumbnailUrl ? (
             <img 
               src={content.thumbnailUrl} 
               alt={content.title} 
-              className={`w-full h-full object-cover ${isLocked ? 'blur-sm' : ''}`}
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className={`w-full h-full bg-gray-100 flex items-center justify-center ${isLocked ? 'blur-sm' : ''}`}>
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
               {content.type === "video" ? (
                 <Video className="w-8 h-8 text-gray-400" />
               ) : (
@@ -147,7 +150,11 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
         {content.type === "video" && (
           <div 
             className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center cursor-pointer hover:bg-opacity-50 transition-all"
-            onClick={() => setShowVideoPreview(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('Play button clicked for:', content.title);
+              setShowVideoPreview(true);
+            }}
           >
             <div className="bg-white bg-opacity-90 rounded-full p-3">
               <Play className="text-black text-xl" fill="currentColor" />
@@ -155,15 +162,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
           </div>
         )}
 
-        {/* Lock overlay for premium content */}
-        {isLocked && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-            <div className="text-center text-white">
-              <Lock className="w-6 h-6 mx-auto mb-2" />
-              <p className="text-sm font-medium">Premium Content</p>
-            </div>
-          </div>
-        )}
+
 
         {/* Duration badge for videos */}
         {content.type === "video" && content.duration && (

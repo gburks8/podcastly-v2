@@ -22,6 +22,8 @@ export function VideoPreviewModal({
   onSelectFree,
   canSelectFree
 }: VideoPreviewModalProps) {
+  console.log('VideoPreviewModal props:', { isOpen, video: video?.title, hasAccess, canSelectFree });
+  
   if (!video) return null;
 
   return (
