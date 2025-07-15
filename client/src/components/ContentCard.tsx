@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Download, Lock, Play, Image, Clock } from "lucide-react";
+import { Download, Lock, Play, Image, Clock, Video } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
 
 interface ContentCardProps {
