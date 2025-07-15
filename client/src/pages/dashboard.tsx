@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { ContentCard } from "@/components/ContentCard";
+import { PaymentModal } from "@/components/PaymentModal";
 
 import { Download, Lock, Video, Image, Clock } from "lucide-react";
 import type { ContentItem, Download as DownloadType } from "@shared/schema";
@@ -14,6 +15,7 @@ import type { ContentItem, Download as DownloadType } from "@shared/schema";
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
 
   // Redirect to login if not authenticated
@@ -88,6 +90,10 @@ export default function Dashboard() {
   // Separate content by type
   const videos = allContent.filter((item: ContentItem) => item.type === "video");
   const headshots = allContent.filter((item: ContentItem) => item.type === "headshot");
+  
+  // Get premium content (content that costs money)
+  const premiumVideos = videos.filter((item: ContentItem) => !selectedContentIds.has(item.id));
+  const premiumHeadshots = headshots.filter((item: ContentItem) => !selectedContentIds.has(item.id));
   
   // Count free selections used
   const freeVideoSelections = freeSelections.filter(s => {
