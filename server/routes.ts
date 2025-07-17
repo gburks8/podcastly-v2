@@ -205,6 +205,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route for getting content details for purchase (no access check required)
+  app.get('/api/content/:id/details', isAuthenticated, async (req: any, res) => {
+    try {
+      const contentId = parseInt(req.params.id);
+      
+      const contentItem = await storage.getContentItem(contentId);
+      if (!contentItem) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+
+      res.json(contentItem);
+    } catch (error) {
+      console.error("Error fetching content details:", error);
+      res.status(500).json({ message: "Failed to fetch content details" });
+    }
+  });
+
   app.post('/api/content/:id/select-free', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

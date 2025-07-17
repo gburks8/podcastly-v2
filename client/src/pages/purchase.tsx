@@ -99,7 +99,7 @@ export default function Purchase() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data: contentItem, isLoading: isLoadingContent } = useQuery({
-    queryKey: ["/api/content", contentId],
+    queryKey: [`/api/content/${contentId}/details`],
     enabled: !!contentId,
   });
 

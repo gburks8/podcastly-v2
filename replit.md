@@ -17,6 +17,10 @@ Preferred communication style: Simple, everyday language.
 - Updated ContentCard component to display thumbnails naturally without CSS distortion
 - Simplified container styling to properly center vertical thumbnails
 - Removed forced aspect-ratio CSS constraints that were causing display issues
+- Improved download button progression: "Download Free Video" → "Confirm Download" → "Download Video"
+- Added tracking for previously downloaded content to show appropriate button text
+- Fixed database schema by adding missing content_item_id column to payments table
+- Added /api/content/:id/details endpoint for purchase page content viewing
 
 **July 15, 2025**
 - Replaced Replit Auth with custom email/password authentication system
