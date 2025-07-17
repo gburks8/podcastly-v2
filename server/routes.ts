@@ -400,7 +400,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         thumbnailUrl: thumbnailUrl,
         width: width,
         height: height,
-        aspectRatio: aspectRatio,
+        aspectRatio: aspectRatio ? aspectRatio.toString() : null,
         price: req.body.price || "25.00",
       };
 
