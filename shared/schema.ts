@@ -37,6 +37,8 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id"),
   freeVideoSelectionsUsed: integer("free_video_selections_used").default(0),
   freeHeadshotSelectionsUsed: integer("free_headshot_selections_used").default(0),
+  hasAdditional3Videos: boolean("has_additional_3_videos").default(false),
+  hasAllRemainingContent: boolean("has_all_remaining_content").default(false),
   isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -66,6 +68,7 @@ export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   contentItemId: integer("content_item_id").references(() => contentItems.id),
+  packageType: varchar("package_type"), // 'additional_3_videos', 'all_remaining_content', or null for individual
   stripePaymentIntentId: varchar("stripe_payment_intent_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   currency: varchar("currency").default("usd"),

@@ -41,6 +41,10 @@ export interface IStorage {
   getPaymentByStripeId(stripePaymentIntentId: string): Promise<Payment | undefined>;
   updatePaymentStatus(stripePaymentIntentId: string, status: string): Promise<void>;
   hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean>;
+  
+  // Package purchase operations
+  updateUserPackagePurchase(userId: string, packageType: string): Promise<void>;
+  hasPackageAccess(userId: string, packageType: string): Promise<boolean>;
 
   // Download operations
   createDownload(download: InsertDownload): Promise<Download>;
@@ -220,6 +224,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hasDownloadAccess(userId: string, contentItemId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
     // Check if user has selected this content as free
     const [freeSelection] = await db
       .select()
@@ -233,8 +240,49 @@ export class DatabaseStorage implements IStorage {
     
     if (freeSelection) return true;
 
-    // Check if user has purchased this content
-    return await this.hasPurchasedContent(userId, contentItemId);
+    // Check if user has purchased this content individually
+    const hasPurchased = await this.hasPurchasedContent(userId, contentItemId);
+    if (hasPurchased) return true;
+
+    // Check if user has package access
+    const contentItem = await this.getContentItem(contentItemId);
+    if (!contentItem) return false;
+
+    // If user has "all remaining content" package, they have access to everything
+    if (user.hasAllRemainingContent) return true;
+
+    // If user has "additional 3 videos" package, they have access to videos (but not headshots)
+    if (user.hasAdditional3Videos && contentItem.type === "video") return true;
+
+    return false;
+  }
+
+  // Package purchase operations
+  async updateUserPackagePurchase(userId: string, packageType: string): Promise<void> {
+    if (packageType === "additional_3_videos") {
+      await db
+        .update(users)
+        .set({ hasAdditional3Videos: true })
+        .where(eq(users.id, userId));
+    } else if (packageType === "all_remaining_content") {
+      await db
+        .update(users)
+        .set({ hasAllRemainingContent: true })
+        .where(eq(users.id, userId));
+    }
+  }
+
+  async hasPackageAccess(userId: string, packageType: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    if (packageType === "additional_3_videos") {
+      return user.hasAdditional3Videos;
+    } else if (packageType === "all_remaining_content") {
+      return user.hasAllRemainingContent;
+    }
+
+    return false;
   }
 
   // Admin operations

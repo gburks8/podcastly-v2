@@ -156,6 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       stripeCustomerId: user.stripeCustomerId,
       freeVideoSelectionsUsed: user.freeVideoSelectionsUsed,
       freeHeadshotSelectionsUsed: user.freeHeadshotSelectionsUsed,
+      hasAdditional3Videos: user.hasAdditional3Videos,
+      hasAllRemainingContent: user.hasAllRemainingContent,
       createdAt: user.createdAt,
     });
   });
@@ -329,6 +331,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Package purchase routes
+  app.post("/api/packages/create-payment-intent", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ message: "Payment processing not configured" });
+      }
+
+      const userId = req.user.id;
+      const { packageType } = req.body;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user already has this package
+      const hasPackage = await storage.hasPackageAccess(userId, packageType);
+      if (hasPackage) {
+        return res.status(400).json({ message: "Package already purchased" });
+      }
+
+      let amount: number;
+      let description: string;
+
+      if (packageType === "additional_3_videos") {
+        amount = 199.00;
+        description = "Additional 3 Videos Package";
+      } else if (packageType === "all_remaining_content") {
+        amount = 499.00;
+        description = "All Remaining Content Package";
+      } else {
+        return res.status(400).json({ message: "Invalid package type" });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: "usd",
+        metadata: {
+          userId,
+          packageType,
+        },
+      });
+
+      // Create payment record
+      await storage.createPayment({
+        userId,
+        packageType,
+        stripePaymentIntentId: paymentIntent.id,
+        amount: amount.toString(),
+        status: "pending",
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      console.error("Error creating package payment intent:", error);
+      res.status(500).json({ message: "Error creating package payment intent: " + error.message });
+    }
+  });
+
   app.post("/api/payment-webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     if (!stripe) {
       return res.status(500).json({ message: "Payment processing not configured" });
@@ -349,6 +410,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update payment status
       await storage.updatePaymentStatus(paymentIntent.id, "succeeded");
+
+      // If it's a package purchase, update user's package status
+      if (paymentIntent.metadata?.packageType && paymentIntent.metadata?.userId) {
+        await storage.updateUserPackagePurchase(
+          paymentIntent.metadata.userId,
+          paymentIntent.metadata.packageType
+        );
+      }
     }
 
     res.json({ received: true });

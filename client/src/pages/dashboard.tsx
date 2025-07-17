@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { ContentCard } from "@/components/ContentCard";
-import { PaymentModal } from "@/components/PaymentModal";
+import { PackagePurchaseModal } from "@/components/PackagePurchaseModal";
 
 import { Download, Lock, Video, Image, Clock, Settings, LogOut } from "lucide-react";
 import type { ContentItem, Download as DownloadType } from "@shared/schema";
@@ -15,7 +15,7 @@ import type { ContentItem, Download as DownloadType } from "@shared/schema";
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isPackagePurchaseModalOpen, setIsPackagePurchaseModalOpen] = useState(false);
 
 
   // Redirect to login if not authenticated
@@ -92,10 +92,6 @@ export default function Dashboard() {
   const videos = allContent.filter((item: ContentItem) => item.type === "video");
   const headshots = allContent.filter((item: ContentItem) => item.type === "headshot");
   
-  // Get premium content (content that costs money)
-  const premiumVideos = videos.filter((item: ContentItem) => !selectedContentIds.has(item.id));
-  const premiumHeadshots = headshots.filter((item: ContentItem) => !selectedContentIds.has(item.id));
-  
   // Count free selections used
   const freeVideoSelections = freeSelections.filter(s => {
     const content = allContent.find(c => c.id === s.contentItemId);
@@ -105,6 +101,20 @@ export default function Dashboard() {
     const content = allContent.find(c => c.id === s.contentItemId);
     return content?.type === "headshot";
   });
+
+  // Helper function to determine if user has access to content
+  const hasContentAccess = (contentItem: ContentItem): boolean => {
+    // Free selections always have access
+    if (selectedContentIds.has(contentItem.id)) return true;
+    
+    // If user has all remaining content package, they have access to everything
+    if (user?.hasAllRemainingContent) return true;
+    
+    // If user has additional 3 videos package, they have access to videos (but not headshots)
+    if (user?.hasAdditional3Videos && contentItem.type === "video") return true;
+    
+    return false;
+  };
 
   if (isLoading || contentLoading || selectionsLoading || historyLoading) {
     return (
@@ -221,7 +231,7 @@ export default function Dashboard() {
                   key={item.id} 
                   content={item} 
                   isFree={selectedContentIds.has(item.id)}
-                  hasAccess={selectedContentIds.has(item.id)}
+                  hasAccess={hasContentAccess(item)}
                   canSelectFree={freeVideoSelections.length < 3 && !selectedContentIds.has(item.id)}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                 />
@@ -257,7 +267,7 @@ export default function Dashboard() {
                   key={item.id} 
                   content={item} 
                   isFree={selectedContentIds.has(item.id)}
-                  hasAccess={selectedContentIds.has(item.id)}
+                  hasAccess={hasContentAccess(item)}
                   canSelectFree={freeHeadshotSelections.length < 1 && !selectedContentIds.has(item.id)}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
@@ -274,7 +284,7 @@ export default function Dashboard() {
               <h3 className="text-2xl font-bold text-gray-900 mb-4">How It Works</h3>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 Select up to 3 videos and 1 headshot for free download. 
-                Additional content can be purchased individually.
+                Then choose a package to access additional content.
               </p>
             </div>
 
@@ -297,10 +307,28 @@ export default function Dashboard() {
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <Download className="w-8 h-8 text-primary mx-auto mb-3" />
                   <h4 className="font-semibold text-gray-900 mb-2">Step 3: Purchase More</h4>
-                  <p className="text-sm text-gray-600">Buy additional content individually as needed</p>
+                  <p className="text-sm text-gray-600">Buy additional content with our packages</p>
                 </div>
               </div>
             </div>
+
+            {/* Package Purchase Button */}
+            {freeVideoSelections.length === 3 && (
+              <div className="mt-8 text-center">
+                <div className="bg-white rounded-lg p-6 shadow-sm border-2 border-blue-200">
+                  <h4 className="font-semibold text-gray-900 mb-2">Ready for More Content?</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    You've selected your 3 free videos. Choose a package to access additional content.
+                  </p>
+                  <Button 
+                    onClick={() => setIsPackagePurchaseModalOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    View Packages
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -371,12 +399,21 @@ export default function Dashboard() {
         </section>
       </main>
 
-      {/* Payment Modal */}
-      <PaymentModal 
-        isOpen={isPaymentModalOpen} 
-        onClose={() => setIsPaymentModalOpen(false)}
-        premiumVideoCount={premiumVideos.length}
-        premiumHeadshotCount={premiumHeadshots.length}
+      {/* Package Purchase Modal */}
+      <PackagePurchaseModal 
+        isOpen={isPackagePurchaseModalOpen} 
+        onClose={() => setIsPackagePurchaseModalOpen(false)}
+        onSuccess={() => {
+          // Refresh data when purchase is successful
+          window.location.reload();
+        }}
+        freeSelectionsUsed={freeVideoSelections.length}
+        totalVideos={videos.length}
+        totalHeadshots={headshots.length}
+        userPackages={{
+          hasAdditional3Videos: user?.hasAdditional3Videos || false,
+          hasAllRemainingContent: user?.hasAllRemainingContent || false,
+        }}
       />
     </div>
   );
