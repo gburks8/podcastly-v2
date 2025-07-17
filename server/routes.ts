@@ -125,6 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.sendStatus(401);
     }
     const user = req.user;
+    console.log('DEBUG: Full user object from session:', user);
     res.json({
       id: user.id,
       email: user.email,
