@@ -130,6 +130,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      isAdmin: user.isAdmin,
+      profileImageUrl: user.profileImageUrl,
+      stripeCustomerId: user.stripeCustomerId,
+      freeVideoSelectionsUsed: user.freeVideoSelectionsUsed,
+      freeHeadshotSelectionsUsed: user.freeHeadshotSelectionsUsed,
+      createdAt: user.createdAt,
     });
   });
 
