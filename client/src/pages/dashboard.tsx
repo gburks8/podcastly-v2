@@ -203,6 +203,104 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Process Overview */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">How Your Content Access Works</h3>
+            <p className="text-lg text-gray-600 max-w-4xl mx-auto">
+              Get started with your complimentary content, then choose the package that best fits your needs.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="text-center">
+              <div className="bg-blue-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-blue-600">1</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Free Selection</h4>
+              <p className="text-gray-600 mb-4">
+                Choose up to <strong>3 videos</strong> and <strong>1 headshot</strong> for complimentary download.
+              </p>
+              <div className="text-sm text-blue-600 font-medium">
+                {freeVideoSelections.length}/3 videos • {freeHeadshotSelections.length}/1 headshot selected
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="text-center">
+              <div className="bg-green-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-green-600">2</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Package Options</h4>
+              <p className="text-gray-600 mb-4">
+                After your free selections, choose from our packages:
+              </p>
+              <div className="text-sm space-y-1">
+                <div className="text-green-600 font-medium">3 Additional Videos - $199</div>
+                <div className="text-green-600 font-medium">All Remaining Content - $499</div>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="text-center">
+              <div className="bg-purple-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-purple-600">3</span>
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Download & Keep</h4>
+              <p className="text-gray-600 mb-4">
+                All content is yours to download and keep forever in high quality.
+              </p>
+              <div className="text-sm text-purple-600 font-medium">
+                {downloadHistory.length} downloads completed
+              </div>
+            </div>
+          </div>
+
+          {/* Current Status */}
+          <div className="mt-8 p-6 bg-gray-50 rounded-lg">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-4 md:mb-0">
+                <h4 className="text-lg font-semibold text-gray-900">Your Current Status</h4>
+                <p className="text-gray-600">
+                  {freeVideoSelections.length === 0 && freeHeadshotSelections.length === 0 && 
+                    "Start by selecting your free content below"}
+                  {freeVideoSelections.length > 0 && freeVideoSelections.length < 3 && 
+                    `Keep selecting free videos (${3 - freeVideoSelections.length} remaining)`}
+                  {freeVideoSelections.length === 3 && freeHeadshotSelections.length === 0 && 
+                    "Now select your free headshot"}
+                  {freeVideoSelections.length === 3 && freeHeadshotSelections.length === 1 && 
+                    !user?.hasAdditional3Videos && !user?.hasAllRemainingContent && 
+                    "Ready to explore packages for additional content"}
+                  {user?.hasAdditional3Videos && !user?.hasAllRemainingContent && 
+                    "You have access to 3 additional videos"}
+                  {user?.hasAllRemainingContent && 
+                    "You have access to all remaining content"}
+                </p>
+              </div>
+              <div className="flex space-x-4">
+                {user?.hasAdditional3Videos && (
+                  <Badge className="bg-blue-100 text-blue-800">3 Additional Videos</Badge>
+                )}
+                {user?.hasAllRemainingContent && (
+                  <Badge className="bg-green-100 text-green-800">All Content Access</Badge>
+                )}
+                {!user?.hasAdditional3Videos && !user?.hasAllRemainingContent && 
+                  freeVideoSelections.length === 3 && (
+                  <Button 
+                    onClick={() => setIsPackagePurchaseModalOpen(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    View Packages
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Video Content Section */}
         <section className="mb-12">
