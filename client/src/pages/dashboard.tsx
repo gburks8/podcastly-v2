@@ -9,7 +9,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { ContentCard } from "@/components/ContentCard";
 import { PaymentModal } from "@/components/PaymentModal";
 
-import { Download, Lock, Video, Image, Clock } from "lucide-react";
+import { Download, Lock, Video, Image, Clock, Settings, LogOut } from "lucide-react";
 import type { ContentItem, Download as DownloadType } from "@shared/schema";
 
 export default function Dashboard() {
@@ -132,6 +132,17 @@ export default function Dashboard() {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
+              {user?.isAdmin && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = '/admin'}
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Admin Panel
+                </Button>
+              )}
               <span className="text-sm text-gray-600">
                 {user?.firstName} {user?.lastName}
               </span>
