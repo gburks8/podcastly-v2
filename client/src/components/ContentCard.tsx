@@ -15,10 +15,11 @@ interface ContentCardProps {
   isFree: boolean;
   hasAccess?: boolean;
   canSelectFree?: boolean;
+  hasBeenDownloaded?: boolean;
   isCompact?: boolean;
 }
 
-export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, isCompact = false }: ContentCardProps) {
+export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, hasBeenDownloaded = false, isCompact = false }: ContentCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -245,7 +246,10 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Confirm Download
+                {hasBeenDownloaded ? 
+                  `Download ${content.type === "video" ? "Video" : "Image"}` :
+                  "Confirm Download"
+                }
               </>
             )}
           </Button>

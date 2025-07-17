@@ -86,6 +86,7 @@ export default function Dashboard() {
 
   // Get selected content IDs for quick lookup
   const selectedContentIds = new Set(freeSelections.map(selection => selection.contentItemId));
+  const downloadedContentIds = new Set(downloadHistory.map(download => download.contentItemId));
   
   // Separate content by type
   const videos = allContent.filter((item: ContentItem) => item.type === "video");
@@ -222,6 +223,7 @@ export default function Dashboard() {
                   isFree={selectedContentIds.has(item.id)}
                   hasAccess={selectedContentIds.has(item.id)}
                   canSelectFree={freeVideoSelections.length < 3 && !selectedContentIds.has(item.id)}
+                  hasBeenDownloaded={downloadedContentIds.has(item.id)}
                 />
               ))}
             </div>
@@ -257,6 +259,7 @@ export default function Dashboard() {
                   isFree={selectedContentIds.has(item.id)}
                   hasAccess={selectedContentIds.has(item.id)}
                   canSelectFree={freeHeadshotSelections.length < 1 && !selectedContentIds.has(item.id)}
+                  hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
                 />
               ))}
