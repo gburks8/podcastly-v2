@@ -191,12 +191,12 @@ export default function Dashboard() {
                 <div className="text-sm text-blue-100">Free Videos Selected</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">{freeHeadshotSelections.length}/1</div>
-                <div className="text-sm text-blue-100">Free Headshots Selected</div>
-              </div>
-              <div className="text-center">
                 <div className="text-2xl font-bold">{allContent.length}</div>
                 <div className="text-sm text-blue-100">Total Content Available</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">{downloadHistory.length}</div>
+                <div className="text-sm text-blue-100">Downloads Completed</div>
               </div>
             </div>
           </div>
@@ -221,10 +221,10 @@ export default function Dashboard() {
               </div>
               <h4 className="text-lg font-semibold text-gray-900 mb-2">Free Selection</h4>
               <p className="text-gray-600 mb-4">
-                Choose up to <strong>3 videos</strong> and <strong>1 headshot</strong> for complimentary download.
+                Choose up to <strong>3 videos</strong> for complimentary download.
               </p>
               <div className="text-sm text-blue-600 font-medium">
-                {freeVideoSelections.length}/3 videos • {freeHeadshotSelections.length}/1 headshot selected
+                {freeVideoSelections.length}/3 videos selected
               </div>
             </div>
 
@@ -239,7 +239,7 @@ export default function Dashboard() {
               </p>
               <div className="text-sm space-y-1">
                 <div className="text-green-600 font-medium">3 Additional Videos - $199</div>
-                <div className="text-green-600 font-medium">All Remaining Content - $499</div>
+                <div className="text-green-600 font-medium">All Remaining Content + Headshots - $499</div>
               </div>
             </div>
 
@@ -264,13 +264,11 @@ export default function Dashboard() {
               <div className="mb-4 md:mb-0">
                 <h4 className="text-lg font-semibold text-gray-900">Your Current Status</h4>
                 <p className="text-gray-600">
-                  {freeVideoSelections.length === 0 && freeHeadshotSelections.length === 0 && 
-                    "Start by selecting your free content below"}
+                  {freeVideoSelections.length === 0 && 
+                    "Start by selecting your 3 free videos below"}
                   {freeVideoSelections.length > 0 && freeVideoSelections.length < 3 && 
                     `Keep selecting free videos (${3 - freeVideoSelections.length} remaining)`}
-                  {freeVideoSelections.length === 3 && freeHeadshotSelections.length === 0 && 
-                    "Now select your free headshot"}
-                  {freeVideoSelections.length === 3 && freeHeadshotSelections.length === 1 && 
+                  {freeVideoSelections.length === 3 && 
                     !user?.hasAdditional3Videos && !user?.hasAllRemainingContent && 
                     "Ready to explore packages for additional content"}
                   {user?.hasAdditional3Videos && !user?.hasAllRemainingContent && 
@@ -342,8 +340,8 @@ export default function Dashboard() {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-gray-900">Professional Headshots</h3>
-            <Badge className="bg-green-100 text-green-800">
-              {freeHeadshotSelections.length}/1 Free Selected
+            <Badge className="bg-orange-100 text-orange-800">
+              Premium Content
             </Badge>
           </div>
           
@@ -364,9 +362,9 @@ export default function Dashboard() {
                 <ContentCard 
                   key={item.id} 
                   content={item} 
-                  isFree={selectedContentIds.has(item.id)}
+                  isFree={false}
                   hasAccess={hasContentAccess(item)}
-                  canSelectFree={freeHeadshotSelections.length < 1 && !selectedContentIds.has(item.id)}
+                  canSelectFree={false}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
                 />
@@ -381,12 +379,12 @@ export default function Dashboard() {
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">How It Works</h3>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Select up to 3 videos and 1 headshot for free download. 
+                Select up to 3 videos for free download. 
                 Then choose a package to access additional content.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               <div className="text-center">
                 <div className="bg-white rounded-lg p-6 shadow-sm">
                   <Video className="w-8 h-8 text-primary mx-auto mb-3" />
@@ -396,15 +394,8 @@ export default function Dashboard() {
               </div>
               <div className="text-center">
                 <div className="bg-white rounded-lg p-6 shadow-sm">
-                  <Image className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <h4 className="font-semibold text-gray-900 mb-2">Step 2: Select Free Headshot</h4>
-                  <p className="text-sm text-gray-600">Pick 1 professional headshot at no cost</p>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="bg-white rounded-lg p-6 shadow-sm">
                   <Download className="w-8 h-8 text-primary mx-auto mb-3" />
-                  <h4 className="font-semibold text-gray-900 mb-2">Step 3: Purchase More</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Step 2: Purchase More</h4>
                   <p className="text-sm text-gray-600">Buy additional content with our packages</p>
                 </div>
               </div>

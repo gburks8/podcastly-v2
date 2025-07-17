@@ -19,6 +19,8 @@ Preferred communication style: Simple, everyday language.
 - Updated access control logic to handle package-based content access
 - Enhanced dashboard to show package purchase option after free selections
 - Replaced individual content purchases with strategic package offerings
+- Added comprehensive explanatory text at top of dashboard to guide users through process
+- Removed free headshot option - now only 3 free videos, headshots available in $499 package only
 
 **July 16, 2025**
 - Fixed video thumbnail generation to preserve actual video aspect ratios
