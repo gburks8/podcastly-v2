@@ -10,6 +10,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**July 16, 2025**
+- Fixed video thumbnail generation to preserve actual video aspect ratios
+- Completely redesigned FFmpeg thumbnail generation system for vertical videos
+- For vertical videos (1080x1920), thumbnails now generate at proper 180x320 dimensions
+- Updated ContentCard component to display thumbnails naturally without CSS distortion
+- Simplified container styling to properly center vertical thumbnails
+- Removed forced aspect-ratio CSS constraints that were causing display issues
+
 **July 15, 2025**
 - Replaced Replit Auth with custom email/password authentication system
 - Added password hashing using Node.js scrypt for security
