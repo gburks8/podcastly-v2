@@ -245,7 +245,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Download {content.type === "video" ? "Video" : "Image"}
+                Confirm Download
               </>
             )}
           </Button>
@@ -263,7 +263,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                Select Free
+                Download Free {content.type === "video" ? "Video" : "Image"}
               </>
             )}
           </Button>
