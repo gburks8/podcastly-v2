@@ -132,6 +132,7 @@ export default function Dashboard() {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
+              {console.log('Admin check - user:', user, 'isAdmin:', user?.isAdmin)}
               {user?.isAdmin && (
                 <Button 
                   variant="outline" 
