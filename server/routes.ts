@@ -43,7 +43,7 @@ async function getVideoMetadata(videoPath: string): Promise<{ width: number; hei
 }
 
 // Function to generate video thumbnail
-async function generateVideoThumbnail(videoPath: string): Promise<string> {
+async function generateVideoThumbnail(videoPath: string, videoWidth?: number, videoHeight?: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const thumbnailFilename = `thumb-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
     const thumbnailPath = path.join('uploads/thumbnails', thumbnailFilename);
@@ -51,12 +51,30 @@ async function generateVideoThumbnail(videoPath: string): Promise<string> {
     // Ensure thumbnails directory exists
     fs.mkdir('uploads/thumbnails', { recursive: true }).catch(() => {});
     
+    // Calculate thumbnail size based on video dimensions
+    let thumbnailSize = '320x180'; // Default 16:9 fallback
+    if (videoWidth && videoHeight) {
+      // Maintain aspect ratio - scale to max width/height of 320px
+      const aspectRatio = videoWidth / videoHeight;
+      if (aspectRatio > 1) {
+        // Horizontal video - limit by width
+        const width = Math.min(320, videoWidth);
+        const height = Math.round(width / aspectRatio);
+        thumbnailSize = `${width}x${height}`;
+      } else {
+        // Vertical video - limit by height  
+        const height = Math.min(320, videoHeight);
+        const width = Math.round(height * aspectRatio);
+        thumbnailSize = `${width}x${height}`;
+      }
+    }
+    
     ffmpeg(videoPath)
       .screenshots({
         timestamps: ['00:00:01'], // Take screenshot at 1 second
         filename: thumbnailFilename,
         folder: 'uploads/thumbnails/',
-        size: '320x180' // 16:9 aspect ratio for better video thumbnails
+        size: thumbnailSize
       })
       .on('end', () => {
         resolve(`/uploads/thumbnails/${thumbnailFilename}`);
@@ -381,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           aspectRatio = metadata.aspectRatio;
           
           // Generate thumbnail from video
-          thumbnailUrl = await generateVideoThumbnail(videoPath);
+          thumbnailUrl = await generateVideoThumbnail(videoPath, width, height);
         } catch (error) {
           console.error('Failed to process video:', error);
           // Continue without thumbnail and metadata if processing fails

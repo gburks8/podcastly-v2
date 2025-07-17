@@ -166,7 +166,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             <img 
               src={content.thumbnailUrl} 
               alt={content.title} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
