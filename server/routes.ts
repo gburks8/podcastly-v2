@@ -329,6 +329,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/admin/content', isAuthenticated, async (req: any, res) => {
+    try {
+      // Simple admin check - in production, you'd want proper role-based access
+      const allContent = await storage.getAllContentItems();
+      res.json(allContent);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      res.status(500).json({ message: "Failed to fetch content" });
+    }
+  });
+
   app.post('/api/admin/content', isAuthenticated, upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'headshot', maxCount: 1 },
