@@ -54,17 +54,19 @@ async function generateVideoThumbnail(videoPath: string, videoWidth?: number, vi
     // Calculate thumbnail size based on video dimensions
     let thumbnailSize = '320x180'; // Default 16:9 fallback
     if (videoWidth && videoHeight) {
-      // Maintain aspect ratio - scale to max width/height of 320px
+      // For vertical videos, generate a proper vertical thumbnail
+      // For horizontal videos, use standard dimensions
       const aspectRatio = videoWidth / videoHeight;
-      if (aspectRatio > 1) {
-        // Horizontal video - limit by width
-        const width = Math.min(320, videoWidth);
+      if (aspectRatio < 1) {
+        // Vertical video - generate vertical thumbnail
+        // Use 180 width (reasonable size) and calculate height
+        const width = 180;
         const height = Math.round(width / aspectRatio);
         thumbnailSize = `${width}x${height}`;
       } else {
-        // Vertical video - limit by height  
-        const height = Math.min(320, videoHeight);
-        const width = Math.round(height * aspectRatio);
+        // Horizontal video - use 320 width
+        const width = 320;
+        const height = Math.round(width / aspectRatio);
         thumbnailSize = `${width}x${height}`;
       }
     }

@@ -128,22 +128,23 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
 
     const aspectRatio = parseFloat(content.aspectRatio.toString());
     
-    // For vertical videos (aspect ratio < 1), we want a taller container
-    // For horizontal videos (aspect ratio > 1), we want a wider container
+    // For vertical videos (aspect ratio < 1), create a taller container
+    // For horizontal videos (aspect ratio > 1), use full width
     if (aspectRatio < 1) {
-      // Vertical video - use CSS aspect-ratio property
+      // Vertical video - fixed width, auto height
       return { 
-        aspectRatio: aspectRatio.toString(),
         width: isCompact ? '120px' : '180px',
         height: 'auto',
-        margin: '0 auto'
+        margin: '0 auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       };
     } else {
-      // Horizontal video - use full width with proper aspect ratio
+      // Horizontal video - full width
       return { 
-        aspectRatio: aspectRatio.toString(),
         width: '100%',
-        height: 'auto'
+        height: isCompact ? '96px' : '128px'
       };
     }
   };
@@ -166,7 +167,8 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             <img 
               src={content.thumbnailUrl} 
               alt={content.title} 
-              className="w-full h-full object-contain"
+              className="max-w-full max-h-full object-contain"
+              style={{ display: 'block' }}
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
