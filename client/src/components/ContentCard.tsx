@@ -119,8 +119,11 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   // Calculate dynamic container style based on aspect ratio
   const getContainerStyle = () => {
     if (content.type !== "video" || !content.aspectRatio) {
-      // Default height for non-videos or videos without aspect ratio data
-      return { height: isCompact ? '96px' : '128px' };
+      // Default dimensions for non-videos or videos without aspect ratio data
+      return { 
+        width: '100%',
+        height: isCompact ? '96px' : '128px'
+      };
     }
 
     const aspectRatio = parseFloat(content.aspectRatio.toString());
@@ -128,25 +131,20 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     // For vertical videos (aspect ratio < 1), we want a taller container
     // For horizontal videos (aspect ratio > 1), we want a wider container
     if (aspectRatio < 1) {
-      // Vertical video - use fixed width and calculate height
-      const baseWidth = isCompact ? 120 : 180;
-      const calculatedHeight = baseWidth / aspectRatio;
-      // Allow taller containers for vertical videos
-      const maxHeight = isCompact ? 200 : 320;
-      const constrainedHeight = Math.min(maxHeight, calculatedHeight);
+      // Vertical video - use CSS aspect-ratio property
       return { 
-        height: `${constrainedHeight}px`,
-        width: `${baseWidth}px`,
+        aspectRatio: aspectRatio.toString(),
+        width: isCompact ? '120px' : '180px',
+        height: 'auto',
         margin: '0 auto'
       };
     } else {
-      // Horizontal video - use full width and calculate height
-      const baseWidth = 250;
-      const calculatedHeight = baseWidth / aspectRatio;
-      const minHeight = isCompact ? 80 : 100;
-      const maxHeight = isCompact ? 120 : 180;
-      const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
-      return { height: `${constrainedHeight}px` };
+      // Horizontal video - use full width with proper aspect ratio
+      return { 
+        aspectRatio: aspectRatio.toString(),
+        width: '100%',
+        height: 'auto'
+      };
     }
   };
 
@@ -157,7 +155,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     <Card className={`overflow-hidden hover:shadow-lg transition-shadow duration-300 ${isLocked ? 'relative' : ''}`}>
       <div className="relative">
         <div 
-          className={`overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''} bg-gray-100`}
+          className={`overflow-hidden ${content.type === "video" ? 'cursor-pointer' : ''} bg-gray-100 flex items-center justify-center`}
           style={getContainerStyle()}
           onClick={content.type === "video" ? () => {
             console.log('Thumbnail clicked, opening preview for:', content.title);
