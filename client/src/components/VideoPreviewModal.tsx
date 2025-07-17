@@ -38,10 +38,17 @@ export function VideoPreviewModal({
         
         <div className="space-y-4">
           {/* Video Player */}
-          <div className="aspect-video bg-black rounded-lg overflow-hidden">
+          <div 
+            className="bg-black rounded-lg overflow-hidden flex items-center justify-center"
+            style={{
+              aspectRatio: video.aspectRatio ? parseFloat(video.aspectRatio.toString()) : 16/9,
+              maxHeight: '70vh',
+              maxWidth: '100%'
+            }}
+          >
             <video
               controls
-              className="w-full h-full"
+              className="w-full h-full object-contain"
               poster={video.thumbnailUrl || undefined}
             >
               <source src={video.fileUrl} type="video/mp4" />

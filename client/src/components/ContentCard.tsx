@@ -124,15 +124,30 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     }
 
     const aspectRatio = parseFloat(content.aspectRatio.toString());
-    const baseWidth = 250; // Approximate card width
-    const calculatedHeight = baseWidth / aspectRatio;
     
-    // Constrain height between reasonable bounds
-    const minHeight = isCompact ? 80 : 100;
-    const maxHeight = isCompact ? 120 : 180;
-    const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
-    
-    return { height: `${constrainedHeight}px` };
+    // For vertical videos (aspect ratio < 1), we want a taller container
+    // For horizontal videos (aspect ratio > 1), we want a wider container
+    if (aspectRatio < 1) {
+      // Vertical video - use fixed width and calculate height
+      const baseWidth = isCompact ? 120 : 180;
+      const calculatedHeight = baseWidth / aspectRatio;
+      // Allow taller containers for vertical videos
+      const maxHeight = isCompact ? 200 : 320;
+      const constrainedHeight = Math.min(maxHeight, calculatedHeight);
+      return { 
+        height: `${constrainedHeight}px`,
+        width: `${baseWidth}px`,
+        margin: '0 auto'
+      };
+    } else {
+      // Horizontal video - use full width and calculate height
+      const baseWidth = 250;
+      const calculatedHeight = baseWidth / aspectRatio;
+      const minHeight = isCompact ? 80 : 100;
+      const maxHeight = isCompact ? 120 : 180;
+      const constrainedHeight = Math.max(minHeight, Math.min(maxHeight, calculatedHeight));
+      return { height: `${constrainedHeight}px` };
+    }
   };
 
   const canDownload = isFree || hasAccess;
@@ -153,7 +168,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             <img 
               src={content.thumbnailUrl} 
               alt={content.title} 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           ) : (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
