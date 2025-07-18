@@ -121,8 +121,8 @@ export default function Dashboard() {
 
   // Handle first download attempt
   const handleFirstDownloadAttempt = (contentId: string, title: string) => {
-    // Check if this is the first download attempt (no downloads yet and no free selections)
-    if (downloadHistory.length === 0 && freeSelections.length === 0) {
+    // Check if this is the first download attempt (no downloads yet)
+    if (downloadHistory.length === 0) {
       setPendingDownload({ id: contentId, title });
       setIsFirstDownloadInfoModalOpen(true);
     } else {
@@ -379,7 +379,7 @@ export default function Dashboard() {
                   hasAccess={hasContentAccess(item)}
                   canSelectFree={freeVideoSelections.length < 3 && !selectedContentIds.has(item.id)}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
-                  onFirstDownloadAttempt={downloadHistory.length === 0 && freeSelections.length === 0 ? handleFirstDownloadAttempt : undefined}
+                  onFirstDownloadAttempt={downloadHistory.length === 0 ? handleFirstDownloadAttempt : undefined}
                 />
               ))}
             </div>
@@ -417,7 +417,7 @@ export default function Dashboard() {
                   canSelectFree={false}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
-                  onFirstDownloadAttempt={downloadHistory.length === 0 && freeSelections.length === 0 ? handleFirstDownloadAttempt : undefined}
+                  onFirstDownloadAttempt={downloadHistory.length === 0 ? handleFirstDownloadAttempt : undefined}
                 />
               ))}
             </div>
