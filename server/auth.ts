@@ -34,14 +34,26 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const PostgresSessionStore = connectPg(session);
   
+  // Create session store with error handling
+  let sessionStore;
+  try {
+    sessionStore = new PostgresSessionStore({
+      pool,
+      createTableIfMissing: false,
+      tableName: 'session',
+      schemaName: 'public',
+    });
+  } catch (error) {
+    console.warn('Failed to create PostgreSQL session store, falling back to memory store:', error);
+    // Fallback to memory store for development
+    sessionStore = undefined;
+  }
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
-    store: new PostgresSessionStore({
-      pool,
-      createTableIfMissing: false, // Table already exists from previous setup
-    }),
+    store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
