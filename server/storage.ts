@@ -156,7 +156,8 @@ export class DatabaseStorage implements IStorage {
     if (contentType === "video") {
       return (user.freeVideoSelectionsUsed || 0) < 3;
     } else if (contentType === "headshot") {
-      return (user.freeHeadshotSelectionsUsed || 0) < 1;
+      // No free headshots available in the current pricing model
+      return false;
     }
     
     return false;
