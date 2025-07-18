@@ -8,6 +8,7 @@ interface FirstDownloadInfoModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProceed: () => void;
+  onPurchasePackage?: (packageType: 'additional3Videos' | 'allRemainingContent') => void;
   videoTitle: string;
   remainingFreeVideos: number;
 }
@@ -16,6 +17,7 @@ export function FirstDownloadInfoModal({
   isOpen,
   onClose,
   onProceed,
+  onPurchasePackage,
   videoTitle,
   remainingFreeVideos
 }: FirstDownloadInfoModalProps) {
@@ -102,10 +104,13 @@ export function FirstDownloadInfoModal({
               Package Details
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg p-4 border">
+              <div 
+                className="bg-white rounded-lg p-4 border hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => onPurchasePackage?.('additional3Videos')}
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-semibold text-gray-900">3 Additional Videos</h5>
-                  <Badge className="bg-blue-100 text-blue-800">$199</Badge>
+                  <h5 className="font-semibold text-gray-900 group-hover:text-blue-700">3 Additional Videos</h5>
+                  <Badge className="bg-blue-100 text-blue-800 group-hover:bg-blue-200">$199</Badge>
                 </div>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li className="flex items-center gap-2">
@@ -121,11 +126,17 @@ export function FirstDownloadInfoModal({
                     Instant access
                   </li>
                 </ul>
+                <div className="mt-3 text-center">
+                  <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700">Click to Purchase →</span>
+                </div>
               </div>
-              <div className="bg-white rounded-lg p-4 border">
+              <div 
+                className="bg-white rounded-lg p-4 border hover:border-green-300 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => onPurchasePackage?.('allRemainingContent')}
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-semibold text-gray-900">All Remaining Content</h5>
-                  <Badge className="bg-green-100 text-green-800">$499</Badge>
+                  <h5 className="font-semibold text-gray-900 group-hover:text-green-700">All Remaining Content</h5>
+                  <Badge className="bg-green-100 text-green-800 group-hover:bg-green-200">$499</Badge>
                 </div>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li className="flex items-center gap-2">
@@ -141,6 +152,9 @@ export function FirstDownloadInfoModal({
                     Complete content library
                   </li>
                 </ul>
+                <div className="mt-3 text-center">
+                  <span className="text-sm text-green-600 font-medium group-hover:text-green-700">Click to Purchase →</span>
+                </div>
               </div>
             </div>
           </div>

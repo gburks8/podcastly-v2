@@ -570,6 +570,12 @@ export default function Dashboard() {
           setIsFirstDownloadInfoModalOpen(false);
           setPendingDownload(null);
         }}
+        onPurchasePackage={(packageType) => {
+          // Close the first download modal and open the package purchase modal
+          setIsFirstDownloadInfoModalOpen(false);
+          setPendingDownload(null);
+          setIsPackagePurchaseModalOpen(true);
+        }}
         videoTitle={pendingDownload?.title || ""}
         remainingFreeVideos={3 - freeVideoSelections.length}
       />
