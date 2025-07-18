@@ -380,6 +380,12 @@ export default function Dashboard() {
                   canSelectFree={freeVideoSelections.length < 3 && !selectedContentIds.has(item.id)}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   onFirstDownloadAttempt={downloadHistory.length === 0 ? handleFirstDownloadAttempt : undefined}
+                  showPackageOptionsInstead={
+                    !hasContentAccess(item) && 
+                    !selectedContentIds.has(item.id) && 
+                    freeVideoSelections.length >= 3
+                  }
+                  onShowPackageOptions={() => setIsPackagePurchaseModalOpen(true)}
                 />
               ))}
             </div>
@@ -418,6 +424,8 @@ export default function Dashboard() {
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
                   onFirstDownloadAttempt={downloadHistory.length === 0 ? handleFirstDownloadAttempt : undefined}
+                  showPackageOptionsInstead={!hasContentAccess(item)}
+                  onShowPackageOptions={() => setIsPackagePurchaseModalOpen(true)}
                 />
               ))}
             </div>

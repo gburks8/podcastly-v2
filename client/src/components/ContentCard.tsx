@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Download, Lock, Play, Image, Clock, Video } from "lucide-react";
+import { Download, Lock, Play, Image, Clock, Video, Package } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
 import { VideoPreviewModal } from "./VideoPreviewModal";
 
@@ -18,9 +18,11 @@ interface ContentCardProps {
   hasBeenDownloaded?: boolean;
   isCompact?: boolean;
   onFirstDownloadAttempt?: (contentId: string, title: string) => void;
+  showPackageOptionsInstead?: boolean;
+  onShowPackageOptions?: () => void;
 }
 
-export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, hasBeenDownloaded = false, isCompact = false, onFirstDownloadAttempt }: ContentCardProps) {
+export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, hasBeenDownloaded = false, isCompact = false, onFirstDownloadAttempt, showPackageOptionsInstead = false, onShowPackageOptions }: ContentCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -277,6 +279,14 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
                 Download Free {content.type === "video" ? "Video" : "Image"}
               </>
             )}
+          </Button>
+        ) : showPackageOptionsInstead ? (
+          <Button
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            onClick={onShowPackageOptions}
+          >
+            <Package className="w-4 h-4 mr-2" />
+            View Packages
           </Button>
         ) : (
           <div className="space-y-2">
