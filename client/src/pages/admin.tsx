@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle } from "lucide-react";
@@ -485,11 +486,10 @@ export default function Admin() {
                     {users.map((user: User) => (
                       <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
-                          <img 
-                            src={user.profileImageUrl || "https://via.placeholder.com/40"} 
-                            alt="Profile"
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
+                            <AvatarFallback>{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
+                          </Avatar>
                           <div>
                             <p className="font-medium">{user.firstName} {user.lastName}</p>
                             <p className="text-sm text-gray-600">{user.email}</p>
