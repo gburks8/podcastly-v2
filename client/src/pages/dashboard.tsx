@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ContentCard } from "@/components/ContentCard";
 import { PackagePurchaseModal } from "@/components/PackagePurchaseModal";
 import { FirstDownloadInfoModal } from "@/components/FirstDownloadInfoModal";
+import { useLocation } from "wouter";
 
 import { Download, Lock, Video, Image, Clock, Settings, LogOut } from "lucide-react";
 import type { ContentItem, Download as DownloadType } from "@shared/schema";
@@ -17,6 +18,7 @@ import type { ContentItem, Download as DownloadType } from "@shared/schema";
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isPackagePurchaseModalOpen, setIsPackagePurchaseModalOpen] = useState(false);
   const [isFirstDownloadInfoModalOpen, setIsFirstDownloadInfoModalOpen] = useState(false);
   const [pendingDownload, setPendingDownload] = useState<{ id: string; title: string } | null>(null);
@@ -198,7 +200,7 @@ export default function Dashboard() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => window.location.href = '/admin'}
+                  onClick={() => setLocation('/admin')}
                   className="flex items-center gap-2"
                 >
                   <Settings className="w-4 h-4" />
