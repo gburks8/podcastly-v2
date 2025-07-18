@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ContentCard } from "@/components/ContentCard";
 import { PackagePurchaseModal } from "@/components/PackagePurchaseModal";
 import { FirstDownloadInfoModal } from "@/components/FirstDownloadInfoModal";
@@ -213,7 +214,20 @@ export default function Dashboard() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => window.location.href = '/api/logout'}
+                onClick={async () => {
+                  try {
+                    await apiRequest("POST", "/api/logout");
+                    // Clear the user query cache
+                    queryClient.setQueryData(["/api/user"], null);
+                    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                    // Redirect to home
+                    window.location.href = '/';
+                  } catch (error) {
+                    console.error("Logout failed:", error);
+                    // Fallback to direct navigation
+                    window.location.href = '/api/logout';
+                  }
+                }}
               >
                 Sign Out
               </Button>
