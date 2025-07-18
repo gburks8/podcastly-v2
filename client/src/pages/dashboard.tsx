@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { ContentCard } from "@/components/ContentCard";
 import { PackagePurchaseModal } from "@/components/PackagePurchaseModal";
+import { FirstDownloadInfoModal } from "@/components/FirstDownloadInfoModal";
 
 import { Download, Lock, Video, Image, Clock, Settings, LogOut } from "lucide-react";
 import type { ContentItem, Download as DownloadType } from "@shared/schema";
@@ -16,6 +17,8 @@ export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [isPackagePurchaseModalOpen, setIsPackagePurchaseModalOpen] = useState(false);
+  const [isFirstDownloadInfoModalOpen, setIsFirstDownloadInfoModalOpen] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState<{ id: string; title: string } | null>(null);
 
 
   // Redirect to login if not authenticated
@@ -114,6 +117,52 @@ export default function Dashboard() {
     if (user?.hasAdditional3Videos && contentItem.type === "video") return true;
     
     return false;
+  };
+
+  // Handle first download attempt
+  const handleFirstDownloadAttempt = (contentId: string, title: string) => {
+    // Check if this is the first download attempt (no downloads yet and no free selections)
+    if (downloadHistory.length === 0 && freeSelections.length === 0) {
+      setPendingDownload({ id: contentId, title });
+      setIsFirstDownloadInfoModalOpen(true);
+    } else {
+      // Proceed with normal download flow
+      handleDownload(contentId);
+    }
+  };
+
+  // Handle the actual download
+  const handleDownload = async (contentId: string) => {
+    try {
+      const response = await fetch(`/api/content/${contentId}/download`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `content-${contentId}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download Started",
+        description: "Your content is being downloaded.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading || contentLoading || selectionsLoading || historyLoading) {
@@ -330,6 +379,7 @@ export default function Dashboard() {
                   hasAccess={hasContentAccess(item)}
                   canSelectFree={freeVideoSelections.length < 3 && !selectedContentIds.has(item.id)}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
+                  onFirstDownloadAttempt={downloadHistory.length === 0 && freeSelections.length === 0 ? handleFirstDownloadAttempt : undefined}
                 />
               ))}
             </div>
@@ -367,6 +417,7 @@ export default function Dashboard() {
                   canSelectFree={false}
                   hasBeenDownloaded={downloadedContentIds.has(item.id)}
                   isCompact={true}
+                  onFirstDownloadAttempt={downloadHistory.length === 0 && freeSelections.length === 0 ? handleFirstDownloadAttempt : undefined}
                 />
               ))}
             </div>
@@ -503,6 +554,24 @@ export default function Dashboard() {
           hasAdditional3Videos: user?.hasAdditional3Videos || false,
           hasAllRemainingContent: user?.hasAllRemainingContent || false,
         }}
+      />
+      
+      {/* First Download Info Modal */}
+      <FirstDownloadInfoModal
+        isOpen={isFirstDownloadInfoModalOpen}
+        onClose={() => {
+          setIsFirstDownloadInfoModalOpen(false);
+          setPendingDownload(null);
+        }}
+        onProceed={() => {
+          if (pendingDownload) {
+            handleDownload(pendingDownload.id);
+          }
+          setIsFirstDownloadInfoModalOpen(false);
+          setPendingDownload(null);
+        }}
+        videoTitle={pendingDownload?.title || ""}
+        remainingFreeVideos={3 - freeVideoSelections.length}
       />
     </div>
   );

@@ -17,9 +17,10 @@ interface ContentCardProps {
   canSelectFree?: boolean;
   hasBeenDownloaded?: boolean;
   isCompact?: boolean;
+  onFirstDownloadAttempt?: (contentId: string, title: string) => void;
 }
 
-export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, hasBeenDownloaded = false, isCompact = false }: ContentCardProps) {
+export function ContentCard({ content, isFree, hasAccess = false, canSelectFree = false, hasBeenDownloaded = false, isCompact = false, onFirstDownloadAttempt }: ContentCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -104,6 +105,12 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   };
 
   const handleDownload = async () => {
+    // If this is a first download attempt and callback is provided, use it
+    if (onFirstDownloadAttempt) {
+      onFirstDownloadAttempt(content.id.toString(), content.title);
+      return;
+    }
+    
     setIsDownloading(true);
     try {
       downloadMutation.mutate(content.id);
