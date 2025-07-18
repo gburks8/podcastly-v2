@@ -8,6 +8,7 @@ import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+import { nanoid } from "nanoid";
 
 declare global {
   namespace Express {
@@ -99,6 +100,7 @@ export function setupAuth(app: Express) {
 
       const hashedPassword = await hashPassword(password);
       const user = await storage.createUser({
+        id: nanoid(),
         email,
         password: hashedPassword,
         firstName,
