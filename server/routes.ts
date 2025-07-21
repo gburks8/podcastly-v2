@@ -533,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         height: height,
         aspectRatio: aspectRatio ? aspectRatio.toString() : null,
         price: req.body.price || "25.00",
-        projectId: req.body.projectId ? parseInt(req.body.projectId) : null,
+        projectId: req.body.projectId || null,
       };
 
       const validatedData = insertContentItemSchema.parse(contentData);
@@ -625,6 +625,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching project content:", error);
       res.status(500).json({ message: "Failed to fetch project content" });
+    }
+  });
+
+  // Project selection routes
+  app.post("/api/projects/:id/select-content", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const userId = req.user.id;
+      const { contentItemId, selectionType } = req.body;
+
+      // Check if user can make this selection
+      if (selectionType === 'free') {
+        const canSelect = await storage.canSelectFreeContent(userId, projectId);
+        if (!canSelect) {
+          return res.status(400).json({ message: "Free selection limit reached for this project" });
+        }
+      }
+
+      await storage.selectProjectContent(userId, projectId, contentItemId, selectionType);
+      res.json({ message: "Content selected successfully" });
+    } catch (error) {
+      console.error("Error selecting content:", error);
+      res.status(500).json({ message: "Failed to select content" });
+    }
+  });
+
+  app.get("/api/projects/:id/selections", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const userId = req.user.id;
+      const selections = await storage.getProjectSelections(userId, projectId);
+      res.json(selections);
+    } catch (error) {
+      console.error("Error fetching project selections:", error);
+      res.status(500).json({ message: "Failed to fetch project selections" });
+    }
+  });
+
+  app.get("/api/projects/:id/package-access/:packageType", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const packageType = req.params.packageType;
+      const userId = req.user.id;
+      const hasAccess = await storage.hasProjectPackageAccess(userId, projectId, packageType);
+      res.json({ hasAccess });
+    } catch (error) {
+      console.error("Error checking package access:", error);
+      res.status(500).json({ message: "Failed to check package access" });
+    }
+  });
+
+  // Project payment routes
+  app.post("/api/projects/:id/create-payment-intent", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!stripe) {
+        return res.status(500).json({ message: "Payment processing not configured" });
+      }
+
+      const projectId = req.params.id;
+      const userId = req.user.id;
+      const { packageType, amount } = req.body;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      // Ensure user has a Stripe customer ID
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+        });
+        customerId = customer.id;
+        await storage.updateUserStripeCustomerId(userId, customerId);
+      }
+
+      // Create the payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        customer: customerId,
+        metadata: {
+          userId,
+          projectId,
+          packageType,
+        },
+      });
+
+      // Store payment record
+      await storage.createProjectPayment({
+        userId,
+        projectId,
+        packageType,
+        stripePaymentIntentId: paymentIntent.id,
+        amount: (amount / 100).toString(), // Convert back to dollars
+        status: "pending",
+      });
+
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ message: "Failed to create payment intent" });
     }
   });
 

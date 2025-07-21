@@ -1,22 +1,22 @@
 import {
   users,
   contentItems,
-  payments,
   downloads,
-  freeSelections,
   projects,
+  projectSelections,
+  projectPayments,
   type User,
   type UpsertUser,
   type ContentItem,
   type InsertContentItem,
-  type Payment,
-  type InsertPayment,
   type Download,
   type InsertDownload,
-  type FreeSelection,
-  type InsertFreeSelection,
   type Project,
   type InsertProject,
+  type ProjectSelection,
+  type InsertProjectSelection,
+  type ProjectPayment,
+  type InsertProjectPayment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count } from "drizzle-orm";
@@ -36,20 +36,16 @@ export interface IStorage {
   createContentItem(contentItem: InsertContentItem): Promise<ContentItem>;
   deleteContentItem(id: number): Promise<void>;
 
-  // Free selection operations
-  selectFreeContent(userId: string, contentItemId: number): Promise<void>;
-  getFreeSelections(userId: string): Promise<FreeSelection[]>;
-  canSelectFreeContent(userId: string, contentType: string): Promise<boolean>;
+  // Project-based selection operations
+  selectProjectContent(userId: string, projectId: string, contentItemId: number, selectionType: string): Promise<void>;
+  getProjectSelections(userId: string, projectId: string): Promise<ProjectSelection[]>;
+  canSelectFreeContent(userId: string, projectId: string): Promise<boolean>;
 
-  // Payment operations
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  getPaymentByStripeId(stripePaymentIntentId: string): Promise<Payment | undefined>;
-  updatePaymentStatus(stripePaymentIntentId: string, status: string): Promise<void>;
-  hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean>;
-  
-  // Package purchase operations
-  updateUserPackagePurchase(userId: string, packageType: string): Promise<void>;
-  hasPackageAccess(userId: string, packageType: string): Promise<boolean>;
+  // Project payment operations
+  createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
+  getProjectPaymentByStripeId(stripePaymentIntentId: string): Promise<ProjectPayment | undefined>;
+  updateProjectPaymentStatus(stripePaymentIntentId: string, status: string): Promise<void>;
+  hasProjectPackageAccess(userId: string, projectId: string, packageType: string): Promise<boolean>;
 
   // Download operations
   createDownload(download: InsertDownload): Promise<Download>;
@@ -140,90 +136,77 @@ export class DatabaseStorage implements IStorage {
     await db.delete(contentItems).where(eq(contentItems.id, id));
   }
 
-  // Free selection operations
-  async selectFreeContent(userId: string, contentItemId: number): Promise<void> {
-    const contentItem = await this.getContentItem(contentItemId);
-    if (!contentItem) throw new Error("Content not found");
-
-    // Check if user can select more free content of this type
-    const canSelect = await this.canSelectFreeContent(userId, contentItem.type);
-    if (!canSelect) throw new Error("Free selections limit reached for this content type");
-
-    // Create free selection record
-    await db.insert(freeSelections).values({
+  // Project-based selection operations
+  async selectProjectContent(userId: string, projectId: string, contentItemId: number, selectionType: string): Promise<void> {
+    await db.insert(projectSelections).values({
       userId,
+      projectId,
       contentItemId,
+      selectionType,
     });
-
-    // Update user's free selection count
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
-
-    const updateData: any = { updatedAt: new Date() };
-    if (contentItem.type === "video") {
-      updateData.freeVideoSelectionsUsed = (user.freeVideoSelectionsUsed || 0) + 1;
-    } else if (contentItem.type === "headshot") {
-      updateData.freeHeadshotSelectionsUsed = (user.freeHeadshotSelectionsUsed || 0) + 1;
-    }
-
-    await db.update(users).set(updateData).where(eq(users.id, userId));
   }
 
-  async getFreeSelections(userId: string): Promise<FreeSelection[]> {
+  async getProjectSelections(userId: string, projectId: string): Promise<ProjectSelection[]> {
     return await db
       .select()
-      .from(freeSelections)
-      .where(eq(freeSelections.userId, userId))
-      .orderBy(desc(freeSelections.selectedAt));
+      .from(projectSelections)
+      .where(and(
+        eq(projectSelections.userId, userId),
+        eq(projectSelections.projectId, projectId)
+      ))
+      .orderBy(desc(projectSelections.selectedAt));
   }
 
-  async canSelectFreeContent(userId: string, contentType: string): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user) return false;
-
-    if (contentType === "video") {
-      return (user.freeVideoSelectionsUsed || 0) < 3;
-    } else if (contentType === "headshot") {
-      // No free headshots available in the current pricing model
-      return false;
-    }
+  async canSelectFreeContent(userId: string, projectId: string): Promise<boolean> {
+    const freeSelections = await db
+      .select()
+      .from(projectSelections)
+      .where(and(
+        eq(projectSelections.userId, userId),
+        eq(projectSelections.projectId, projectId),
+        eq(projectSelections.selectionType, 'free')
+      ));
     
-    return false;
+    const project = await this.getProject(projectId);
+    if (!project) return false;
+    
+    return freeSelections.length < (project.freeVideoLimit || 3);
   }
 
-  // Payment operations
-  async createPayment(payment: InsertPayment): Promise<Payment> {
+  // Project payment operations
+  async createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment> {
     const [paymentRecord] = await db
-      .insert(payments)
+      .insert(projectPayments)
       .values(payment)
       .returning();
     return paymentRecord;
   }
 
-  async getPaymentByStripeId(stripePaymentIntentId: string): Promise<Payment | undefined> {
+  async getProjectPaymentByStripeId(stripePaymentIntentId: string): Promise<ProjectPayment | undefined> {
     const [payment] = await db
       .select()
-      .from(payments)
-      .where(eq(payments.stripePaymentIntentId, stripePaymentIntentId));
+      .from(projectPayments)
+      .where(eq(projectPayments.stripePaymentIntentId, stripePaymentIntentId));
     return payment;
   }
 
-  async updatePaymentStatus(stripePaymentIntentId: string, status: string): Promise<void> {
+  async updateProjectPaymentStatus(stripePaymentIntentId: string, status: string): Promise<void> {
     await db
-      .update(payments)
+      .update(projectPayments)
       .set({ status })
-      .where(eq(payments.stripePaymentIntentId, stripePaymentIntentId));
+      .where(eq(projectPayments.stripePaymentIntentId, stripePaymentIntentId));
   }
 
-  async hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean> {
+  async hasProjectPackageAccess(userId: string, projectId: string, packageType: string): Promise<boolean> {
     const [payment] = await db
       .select()
-      .from(payments)
+      .from(projectPayments)
       .where(
         and(
-          eq(payments.userId, userId),
-          eq(payments.contentItemId, contentItemId),
-          eq(payments.status, "succeeded")
+          eq(projectPayments.userId, userId),
+          eq(projectPayments.projectId, projectId),
+          eq(projectPayments.packageType, packageType),
+          eq(projectPayments.status, "succeeded")
         )
       );
     return !!payment;
@@ -253,66 +236,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hasDownloadAccess(userId: string, contentItemId: number): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user) return false;
+    // Get content item to determine project
+    const contentItem = await this.getContentItem(contentItemId);
+    if (!contentItem || !contentItem.projectId) return false;
 
     // Check if user has selected this content as free
-    const [freeSelection] = await db
+    const [selection] = await db
       .select()
-      .from(freeSelections)
+      .from(projectSelections)
       .where(
         and(
-          eq(freeSelections.userId, userId),
-          eq(freeSelections.contentItemId, contentItemId)
+          eq(projectSelections.userId, userId),
+          eq(projectSelections.contentItemId, contentItemId)
         )
       );
     
-    if (freeSelection) return true;
+    if (selection) return true;
 
-    // Check if user has purchased this content individually
-    const hasPurchased = await this.hasPurchasedContent(userId, contentItemId);
-    if (hasPurchased) return true;
+    // Check if user has package access for this project
+    const hasAdditional3Access = await this.hasProjectPackageAccess(userId, contentItem.projectId, 'additional_3_videos');
+    const hasAllContentAccess = await this.hasProjectPackageAccess(userId, contentItem.projectId, 'all_content');
 
-    // Check if user has package access
-    const contentItem = await this.getContentItem(contentItemId);
-    if (!contentItem) return false;
-
-    // If user has "all remaining content" package, they have access to everything
-    if (user.hasAllRemainingContent) return true;
+    // If user has "all content" package, they have access to everything in the project
+    if (hasAllContentAccess) return true;
 
     // If user has "additional 3 videos" package, they have access to videos (but not headshots)
-    if (user.hasAdditional3Videos && contentItem.type === "video") return true;
-
-    return false;
-  }
-
-  // Package purchase operations
-  async updateUserPackagePurchase(userId: string, packageType: string): Promise<void> {
-    if (packageType === "additional_3_videos") {
-      await db
-        .update(users)
-        .set({ hasAdditional3Videos: true })
-        .where(eq(users.id, userId));
-    } else if (packageType === "all_remaining_content") {
-      await db
-        .update(users)
-        .set({ hasAllRemainingContent: true })
-        .where(eq(users.id, userId));
-    }
-  }
-
-  async hasPackageAccess(userId: string, packageType: string): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user) return false;
-
-    if (packageType === "additional_3_videos") {
-      return user.hasAdditional3Videos;
-    } else if (packageType === "all_remaining_content") {
-      return user.hasAllRemainingContent;
+    if (hasAdditional3Access && contentItem.type === "video") {
+      // Check they haven't exceeded the limit (3 free + 3 additional = 6 total videos)
+      const allSelections = await this.getProjectSelections(userId, contentItem.projectId);
+      const videoSelections = allSelections.filter(s => s.selectionType === 'free' || s.selectionType === 'additional_3');
+      return videoSelections.length < 6;
     }
 
     return false;
   }
+
+
 
   // Project operations
   async getUserProjects(userId: string): Promise<Project[]> {

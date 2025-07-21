@@ -31,6 +31,10 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: varchar("name").notNull(),
+  // Project-based pricing configuration
+  freeVideoLimit: integer("free_video_limit").default(3),
+  additional3VideosPrice: decimal("additional_3_videos_price", { precision: 10, scale: 2 }).default("199.00"),
+  allContentPrice: decimal("all_content_price", { precision: 10, scale: 2 }).default("499.00"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -73,12 +77,12 @@ export const contentItems = pgTable("content_items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Payment records
-export const payments = pgTable("payments", {
+// Project-based payment records
+export const projectPayments = pgTable("project_payments", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  contentItemId: integer("content_item_id").references(() => contentItems.id),
-  packageType: varchar("package_type"), // 'additional_3_videos', 'all_remaining_content', or null for individual
+  projectId: varchar("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  packageType: varchar("package_type").notNull(), // 'additional_3_videos' or 'all_content'
   stripePaymentIntentId: varchar("stripe_payment_intent_id").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   currency: varchar("currency").default("usd"),
@@ -86,11 +90,13 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Free selections tracking
-export const freeSelections = pgTable("free_selections", {
+// Project-based free selections tracking
+export const projectSelections = pgTable("project_selections", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   contentItemId: integer("content_item_id").references(() => contentItems.id).notNull(),
+  selectionType: varchar("selection_type").notNull(), // 'free', 'additional_3', or 'all_content'
   selectedAt: timestamp("selected_at").defaultNow(),
 });
 
@@ -105,17 +111,20 @@ export const downloads = pgTable("downloads", {
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   contentItems: many(contentItems),
-  payments: many(payments),
   downloads: many(downloads),
-  freeSelections: many(freeSelections),
   projects: many(projects),
+  projectSelections: many(projectSelections),
+  projectPayments: many(projectPayments),
 }));
 
-export const projectsRelations = relations(projects, ({ one }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(users, {
     fields: [projects.userId],
     references: [users.id],
   }),
+  contentItems: many(contentItems),
+  selections: many(projectSelections),
+  payments: many(projectPayments),
 }));
 
 export const contentItemsRelations = relations(contentItems, ({ one, many }) => ({
@@ -123,19 +132,22 @@ export const contentItemsRelations = relations(contentItems, ({ one, many }) => 
     fields: [contentItems.userId],
     references: [users.id],
   }),
+  project: one(projects, {
+    fields: [contentItems.projectId],
+    references: [projects.id],
+  }),
   downloads: many(downloads),
-  payments: many(payments),
-  freeSelections: many(freeSelections),
+  projectSelections: many(projectSelections),
 }));
 
-export const paymentsRelations = relations(payments, ({ one }) => ({
+export const projectPaymentsRelations = relations(projectPayments, ({ one }) => ({
   user: one(users, {
-    fields: [payments.userId],
+    fields: [projectPayments.userId],
     references: [users.id],
   }),
-  contentItem: one(contentItems, {
-    fields: [payments.contentItemId],
-    references: [contentItems.id],
+  project: one(projects, {
+    fields: [projectPayments.projectId],
+    references: [projects.id],
   }),
 }));
 
@@ -150,13 +162,17 @@ export const downloadsRelations = relations(downloads, ({ one }) => ({
   }),
 }));
 
-export const freeSelectionsRelations = relations(freeSelections, ({ one }) => ({
+export const projectSelectionsRelations = relations(projectSelections, ({ one }) => ({
   user: one(users, {
-    fields: [freeSelections.userId],
+    fields: [projectSelections.userId],
     references: [users.id],
   }),
+  project: one(projects, {
+    fields: [projectSelections.projectId],
+    references: [projects.id],
+  }),
   contentItem: one(contentItems, {
-    fields: [freeSelections.contentItemId],
+    fields: [projectSelections.contentItemId],
     references: [contentItems.id],
   }),
 }));
@@ -164,21 +180,21 @@ export const freeSelectionsRelations = relations(freeSelections, ({ one }) => ({
 // Schemas
 export const insertUserSchema = createInsertSchema(users);
 export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true });
-export const insertPaymentSchema = createInsertSchema(payments);
 export const insertDownloadSchema = createInsertSchema(downloads);
-export const insertFreeSelectionSchema = createInsertSchema(freeSelections);
 export const insertProjectSchema = createInsertSchema(projects).omit({ createdAt: true, updatedAt: true });
+export const insertProjectSelectionSchema = createInsertSchema(projectSelections);
+export const insertProjectPaymentSchema = createInsertSchema(projectPayments);
 
 // Types
-export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type UpsertUser = typeof users.$inferInsert;
 export type ContentItem = typeof contentItems.$inferSelect;
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertContentItem = typeof contentItems.$inferInsert;
-export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = typeof payments.$inferInsert;
 export type Download = typeof downloads.$inferSelect;
 export type InsertDownload = typeof downloads.$inferInsert;
-export type FreeSelection = typeof freeSelections.$inferSelect;
-export type InsertFreeSelection = typeof freeSelections.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type ProjectSelection = typeof projectSelections.$inferSelect;
+export type InsertProjectSelection = typeof projectSelections.$inferInsert;
+export type ProjectPayment = typeof projectPayments.$inferSelect;
+export type InsertProjectPayment = typeof projectPayments.$inferInsert;

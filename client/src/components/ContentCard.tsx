@@ -121,10 +121,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     }
   };
 
-  const handlePurchase = () => {
-    // Navigate to purchase flow for this individual item
-    window.location.href = `/purchase/${content.id}`;
-  };
+
 
   // Calculate dynamic container style based on aspect ratio
   const getContainerStyle = () => {
@@ -289,18 +286,13 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             View Packages
           </Button>
         ) : (
-          <div className="space-y-2">
-            <div className="text-center">
-              <span className="text-lg font-bold text-primary">${content.price || "25.00"}</span>
-            </div>
-            <Button
-              className="w-full bg-primary hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-              onClick={handlePurchase}
-            >
-              <Lock className="w-4 h-4 mr-2" />
-              Purchase
-            </Button>
-          </div>
+          <Button
+            className="w-full bg-gray-300 text-gray-600 cursor-not-allowed font-medium py-2 px-4 rounded-md"
+            disabled
+          >
+            <Lock className="w-4 h-4 mr-2" />
+            Content Locked
+          </Button>
         )}
       </CardContent>
 

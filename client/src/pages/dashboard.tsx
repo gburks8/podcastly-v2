@@ -10,16 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 import { Video, Image, Calendar, ChevronRight, Settings, LogOut, FolderOpen } from "lucide-react";
-import type { ContentItem, Download as DownloadType } from "@shared/schema";
-
-interface Project {
-  id: string;
-  name: string;
-  createdAt: string;
-  videos: ContentItem[];
-  headshots: ContentItem[];
-  totalItems: number;
-}
+import type { ContentItem, Download as DownloadType, Project } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -41,50 +32,15 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: userProjects = [], isLoading: contentLoading } = useQuery({
+  const { data: userProjects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
-    queryFn: async (): Promise<Project[]> => {
-      // Try to get actual projects first
-      try {
-        const projectsResponse = await fetch("/api/projects", {
-          credentials: "include",
-        });
-        if (projectsResponse.ok) {
-          return projectsResponse.json();
-        }
-      } catch (error) {
-        // Fallback to content-based projects if projects endpoint fails
-      }
-      
-      // Fallback: fetch content and group into projects
-      const contentResponse = await fetch("/api/content", {
-        credentials: "include",
-      });
-      if (!contentResponse.ok) throw new Error("Failed to fetch content");
-      const content: ContentItem[] = await contentResponse.json();
-      
-      // Group content into projects (batches of 12)
-      const projects: Project[] = [];
-      const sortedContent = [...content].sort((a, b) => 
-        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-      );
-      
-      for (let i = 0; i < sortedContent.length; i += 12) {
-        const batch = sortedContent.slice(i, i + 12);
-        const projectId = `project-${Math.floor(i / 12) + 1}`;
-        projects.push({
-          id: projectId,
-          name: `Project ${Math.floor(i / 12) + 1}`,
-          createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
-          videos: batch.filter(item => item.type === 'video'),
-          headshots: batch.filter(item => item.type === 'headshot'),
-          totalItems: batch.length,
-        });
-      }
-      
-      return projects;
-    }
+  });
+
+  // Get content counts for each project
+  const { data: allContent = [] } = useQuery<ContentItem[]>({
+    queryKey: ["/api/content"],
+    enabled: isAuthenticated,
   });
 
   const { data: downloadHistory = [] } = useQuery({
@@ -94,19 +50,31 @@ export default function Dashboard() {
 
   // Projects are now fetched from the API
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
 
+  // Helper function to get content counts for a project
+  const getProjectContentCounts = (projectId: string) => {
+    const projectContent = allContent.filter(item => item.projectId === projectId);
+    const videos = projectContent.filter(item => item.type === 'video');
+    const headshots = projectContent.filter(item => item.type === 'headshot');
+    return { videos: videos.length, headshots: headshots.length, total: projectContent.length };
+  };
+
+  const totalVideos = allContent.filter(item => item.type === 'video').length;
+  const totalHeadshots = allContent.filter(item => item.type === 'headshot').length;
+
   const handleProjectClick = (projectId: string) => {
     setLocation(`/project/${projectId}`);
   };
 
-  if (isLoading || contentLoading) {
+  if (isLoading || projectsLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
@@ -205,9 +173,7 @@ export default function Dashboard() {
               <Video className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {userProjects.reduce((acc, project) => acc + project.videos.length, 0)}
-              </div>
+              <div className="text-2xl font-bold">{totalVideos}</div>
             </CardContent>
           </Card>
           <Card>
@@ -216,9 +182,7 @@ export default function Dashboard() {
               <Image className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {userProjects.reduce((acc, project) => acc + project.headshots.length, 0)}
-              </div>
+              <div className="text-2xl font-bold">{totalHeadshots}</div>
             </CardContent>
           </Card>
         </div>
@@ -232,42 +196,45 @@ export default function Dashboard() {
 
           {userProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userProjects.map((project) => (
-                <Card 
-                  key={project.id} 
-                  className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                  onClick={() => handleProjectClick(project.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{project.name}</CardTitle>
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formatDate(project.createdAt)}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="flex items-center">
-                          <Video className="w-4 h-4 mr-1" />
-                          {project.videos.length} Videos
-                        </span>
-                        <span className="flex items-center">
-                          <Image className="w-4 h-4 mr-1" />
-                          {project.headshots.length} Headshots
-                        </span>
-                      </div>
+              {userProjects.map((project) => {
+                const counts = getProjectContentCounts(project.id);
+                return (
+                  <Card 
+                    key={project.id} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+                    onClick={() => handleProjectClick(project.id)}
+                  >
+                    <CardHeader>
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline">{project.totalItems} items total</Badge>
-                        <span className="text-sm text-primary font-medium">View Project →</span>
+                        <CardTitle className="text-lg">{project.name}</CardTitle>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground" />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {formatDate(project.createdAt)}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="flex items-center">
+                            <Video className="w-4 h-4 mr-1" />
+                            {counts.videos} Videos
+                          </span>
+                          <span className="flex items-center">
+                            <Image className="w-4 h-4 mr-1" />
+                            {counts.headshots} Headshots
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline">{counts.total} items total</Badge>
+                          <span className="text-sm text-primary font-medium">View Project →</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card className="text-center py-12">
