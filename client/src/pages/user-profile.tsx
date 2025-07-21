@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Video, Image, Plus, Upload, X, FileVideo, CheckCircle, Calendar } from "lucide-react";
+import { ArrowLeft, Video, Image, Plus, Upload, X, FileVideo, CheckCircle, Calendar, Edit2, Check, X as XIcon } from "lucide-react";
 import type { User, ContentItem } from "@shared/schema";
 
 interface Project {
@@ -48,6 +48,8 @@ export default function UserProfile() {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [editingProjectName, setEditingProjectName] = useState(false);
+  const [projectNameInput, setProjectNameInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!match || !params?.userId) {
@@ -238,6 +240,37 @@ export default function UserProfile() {
     }
   }, [uploadQueue, uploadMutation]);
 
+  // Project name editing
+  const handleEditProjectName = useCallback(() => {
+    if (selectedProject) {
+      setProjectNameInput(selectedProject.name);
+      setEditingProjectName(true);
+    }
+  }, [selectedProject]);
+
+  const handleSaveProjectName = useCallback(() => {
+    if (selectedProject && projectNameInput.trim()) {
+      // Update the selected project locally for immediate UI feedback
+      setSelectedProject({
+        ...selectedProject,
+        name: projectNameInput.trim()
+      });
+      setEditingProjectName(false);
+      
+      // Here you could add an API call to save the project name to the database
+      // For now, we'll just update it locally since projects are generated from content batches
+      toast({
+        title: "Project name updated",
+        description: `Project renamed to "${projectNameInput.trim()}"`,
+      });
+    }
+  }, [selectedProject, projectNameInput, toast]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingProjectName(false);
+    setProjectNameInput("");
+  }, []);
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -285,8 +318,42 @@ export default function UserProfile() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Projects
             </Button>
-            <h2 className="text-xl font-semibold">{selectedProject.name}</h2>
-            <Badge variant="secondary">{selectedProject.totalItems} items</Badge>
+            
+            <div className="flex items-center gap-2 flex-1">
+              {editingProjectName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={projectNameInput}
+                    onChange={(e) => setProjectNameInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveProjectName();
+                      if (e.key === 'Escape') handleCancelEdit();
+                    }}
+                    className="text-xl font-semibold max-w-xs"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={handleSaveProjectName}>
+                    <Check className="w-4 h-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                    <XIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h2 className="text-xl font-semibold">{selectedProject.name}</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleEditProjectName}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              <Badge variant="secondary">{selectedProject.totalItems} items</Badge>
+            </div>
           </div>
 
           <Tabs defaultValue="videos" className="space-y-4">

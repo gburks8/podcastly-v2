@@ -24,6 +24,8 @@ Preferred communication style: Simple, everyday language.
 - Added drag and drop file upload with visual feedback and file type validation
 - Enhanced UX with intuitive upload zone supporting both drag & drop and browse methods
 - Added overall progress bar showing total upload progress across all files
+- Implemented inline project name editing with hover-to-reveal edit functionality
+- Added keyboard shortcuts (Enter to save, Escape to cancel) for project name editing
 - Streamlined workflow: Admin can now click user → create project → drag/drop files → upload content
 
 **July 18, 2025**
