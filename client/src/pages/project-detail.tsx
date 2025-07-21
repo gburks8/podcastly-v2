@@ -15,6 +15,11 @@ import { ProjectReassignDialog } from "@/components/ProjectReassignDialog";
 import type { ContentItem, Download as DownloadType, Project, ProjectSelection } from "@shared/schema";
 
 export default function ProjectDetail() {
+  // Add visible alert to debug
+  if (typeof window !== 'undefined') {
+    document.title = 'PROJECT DETAIL LOADED - ' + window.location.pathname;
+  }
+  
   console.log('=== PROJECT DETAIL COMPONENT MOUNTED ===');
   console.log('Current URL:', window.location.href);
   console.log('Pathname:', window.location.pathname);

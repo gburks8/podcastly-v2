@@ -50,15 +50,14 @@ export default function Auth() {
       console.log('=== END ALREADY AUTH DEBUG ===');
       localStorage.removeItem('intended_destination'); // Clean up
       
-      // Use setTimeout to ensure the redirect happens after the current execution context
+      // Use setTimeout with longer delay and always use window.location.href for reliability
       setTimeout(() => {
+        console.log('=== ALREADY AUTH TIMEOUT REDIRECT ===');
         console.log('Executing redirect (already auth) to:', redirectTo);
-        if (redirectTo === '/') {
-          setLocation('/');
-        } else {
-          window.location.href = redirectTo;
-        }
-      }, 100);
+        console.log('Using window.location.href for reliable redirect');
+        window.location.href = redirectTo;
+        console.log('=== ALREADY AUTH REDIRECT COMPLETED ===');
+      }, 500);
     }
   }, [user, isLoading]);
 
@@ -106,20 +105,14 @@ export default function Auth() {
       localStorage.removeItem('intended_destination'); // Clean up
       console.log('After cleanup - localStorage intended_destination:', localStorage.getItem('intended_destination'));
       
-      // Use setTimeout to ensure the redirect happens after the current execution context
+      // Use setTimeout with longer delay to ensure authentication state is fully updated
       setTimeout(() => {
         console.log('=== TIMEOUT REDIRECT EXECUTING ===');
         console.log('Final redirect to:', redirectTo);
-        console.log('Redirect method:', redirectTo === '/' ? 'setLocation' : 'window.location.href');
-        if (redirectTo === '/') {
-          console.log('Using setLocation for dashboard redirect');
-          setLocation('/');
-        } else {
-          console.log('Using window.location.href for project redirect');
-          window.location.href = redirectTo;
-        }
+        console.log('Always using window.location.href for reliable redirect');
+        window.location.href = redirectTo;
         console.log('=== REDIRECT COMPLETED ===');
-      }, 100);
+      }, 500); // Increased timeout to allow auth state to stabilize
     },
     onError: (error: any) => {
       toast({
