@@ -40,9 +40,20 @@ export default function Auth() {
     if (user && !isLoading) {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      const redirectParam = urlParams.get('redirect');
+      const storedDestination = localStorage.getItem('intended_destination');
+      
+      console.log('Already authenticated redirect:', {
+        redirectParam,
+        storedDestination,
+        currentURL: window.location.href
+      });
+      
+      const redirectTo = redirectParam || storedDestination || '/';
+      
       // Force immediate redirect for already authenticated users
       localStorage.removeItem('intended_destination'); // Clean up
+      console.log('Redirecting already-auth user to:', redirectTo);
       window.location.href = redirectTo;
     }
   }, [user, isLoading]);
@@ -78,10 +89,20 @@ export default function Auth() {
       });
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
-      const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      const redirectParam = urlParams.get('redirect');
+      const storedDestination = localStorage.getItem('intended_destination');
+      
+      console.log('Login success redirect:', {
+        redirectParam,
+        storedDestination,
+        currentURL: window.location.href
+      });
+      
+      const redirectTo = redirectParam || storedDestination || '/';
       
       // Force immediate redirect without setTimeout - the auth state is already updated by setQueryData
       localStorage.removeItem('intended_destination'); // Clean up
+      console.log('Redirecting after login to:', redirectTo);
       window.location.href = redirectTo;
     },
     onError: (error: any) => {
