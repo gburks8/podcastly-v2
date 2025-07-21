@@ -1,13 +1,20 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Video, Image, Calendar, DollarSign } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import { ArrowLeft, Video, Image, Plus, Upload, X, FileVideo, CheckCircle, Calendar } from "lucide-react";
 import type { User, ContentItem } from "@shared/schema";
 
 interface Project {
@@ -19,10 +26,28 @@ interface Project {
   totalItems: number;
 }
 
+interface QueueItem {
+  id: string;
+  file: File;
+  title: string;
+  description: string;
+  type: 'video' | 'headshot';
+  category: 'free' | 'premium';
+  price: string;
+  duration?: string;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  progress: number;
+}
+
 export default function UserProfile() {
   const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [match, params] = useRoute("/admin/user/:userId");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!match || !params?.userId) {
     return <div>User not found</div>;
@@ -72,6 +97,105 @@ export default function UserProfile() {
       totalItems: batch.length,
     });
   }
+
+  // Upload functionality
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !user) return;
+
+    Array.from(files).forEach((file, index) => {
+      const fileType = file.type.startsWith('video/') ? 'video' : 'headshot';
+      const queueItem: QueueItem = {
+        id: `${Date.now()}-${index}`,
+        file,
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        description: "",
+        type: fileType,
+        category: 'premium',
+        price: '25.00',
+        duration: '',
+        status: 'pending',
+        progress: 0,
+      };
+      
+      setUploadQueue(prev => [...prev, queueItem]);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [user]);
+
+  const updateQueueItem = useCallback((id: string, updates: Partial<QueueItem>) => {
+    setUploadQueue(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  }, []);
+
+  const removeFromQueue = useCallback((id: string) => {
+    setUploadQueue(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (item: QueueItem) => {
+      const formData = new FormData();
+      
+      if (item.type === 'video') {
+        formData.append('video', item.file);
+      } else {
+        formData.append('headshot', item.file);
+      }
+      
+      formData.append('title', item.title);
+      formData.append('description', item.description);
+      formData.append('type', item.type);
+      formData.append('category', item.category);
+      formData.append('price', item.price);
+      formData.append('userId', user?.id || '');
+      if (item.duration) {
+        formData.append('duration', item.duration);
+      }
+
+      const response = await fetch('/api/admin/content', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      return response.json();
+    },
+    onMutate: (item) => {
+      updateQueueItem(item.id, { status: 'uploading', progress: 0 });
+    },
+    onSuccess: (data, item) => {
+      updateQueueItem(item.id, { status: 'completed', progress: 100 });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/content", "user", params?.userId] });
+      toast({
+        title: "Upload successful",
+        description: `${item.title} has been uploaded successfully`,
+      });
+    },
+    onError: (error, item) => {
+      updateQueueItem(item.id, { status: 'error', progress: 0 });
+      toast({
+        title: "Upload failed",
+        description: `Failed to upload ${item.title}: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const processUploadQueue = useCallback(async () => {
+    const pendingItems = uploadQueue.filter(item => item.status === 'pending');
+    
+    for (const item of pendingItems) {
+      await uploadMutation.mutateAsync(item);
+    }
+  }, [uploadQueue, uploadMutation]);
 
   if (!user) {
     return <div>Loading...</div>;
@@ -189,8 +313,179 @@ export default function UserProfile() {
       ) : (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">Projects</h2>
-            <Badge variant="outline">{projects.length} projects</Badge>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold">Projects</h2>
+              <Badge variant="outline">{projects.length} projects</Badge>
+            </div>
+            
+            <Dialog open={showCreateProject} onOpenChange={setShowCreateProject}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create New Project for {user.firstName} {user.lastName}</DialogTitle>
+                  <DialogDescription>
+                    Upload videos and headshots to create a new project gallery. Files will be organized automatically.
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* File Upload Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-semibold">Upload Content</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadMutation.isPending}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Select Files
+                      </Button>
+                    </div>
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="video/*,image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Upload Queue */}
+                  {uploadQueue.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-base font-semibold">Upload Queue ({uploadQueue.length})</Label>
+                        <Button
+                          onClick={processUploadQueue}
+                          disabled={uploadMutation.isPending || uploadQueue.every(item => item.status !== 'pending')}
+                        >
+                          {uploadMutation.isPending ? 'Uploading...' : 'Upload All'}
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {uploadQueue.map((item) => (
+                          <div key={item.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                {item.type === 'video' ? (
+                                  <FileVideo className="w-6 h-6 text-blue-500" />
+                                ) : (
+                                  <Image className="w-6 h-6 text-green-500" />
+                                )}
+                                <div>
+                                  <p className="font-medium">{item.file.name}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {item.type} • {(item.file.size / 1024 / 1024).toFixed(1)} MB
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {item.status === 'completed' && (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                )}
+                                {item.status === 'error' && (
+                                  <X className="w-5 h-5 text-red-500" />
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFromQueue(item.id)}
+                                  disabled={item.status === 'uploading'}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label>Title</Label>
+                                <Input
+                                  value={item.title}
+                                  onChange={(e) => updateQueueItem(item.id, { title: e.target.value })}
+                                  placeholder="Enter title..."
+                                  disabled={item.status !== 'pending'}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label>Category</Label>
+                                <Select
+                                  value={item.category}
+                                  onValueChange={(value: 'free' | 'premium') => updateQueueItem(item.id, { category: value })}
+                                  disabled={item.status !== 'pending'}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="premium">Premium</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label>Price</Label>
+                                <Input
+                                  value={item.price}
+                                  onChange={(e) => updateQueueItem(item.id, { price: e.target.value })}
+                                  placeholder="25.00"
+                                  disabled={item.status !== 'pending'}
+                                />
+                              </div>
+                              
+                              {item.type === 'video' && (
+                                <div>
+                                  <Label>Duration</Label>
+                                  <Input
+                                    value={item.duration}
+                                    onChange={(e) => updateQueueItem(item.id, { duration: e.target.value })}
+                                    placeholder="e.g. 2:30"
+                                    disabled={item.status !== 'pending'}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div>
+                              <Label>Description</Label>
+                              <Textarea
+                                value={item.description}
+                                onChange={(e) => updateQueueItem(item.id, { description: e.target.value })}
+                                placeholder="Enter description..."
+                                rows={2}
+                                disabled={item.status !== 'pending'}
+                              />
+                            </div>
+                            
+                            {item.status === 'uploading' && (
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span>Uploading...</span>
+                                  <span>{item.progress}%</span>
+                                </div>
+                                <Progress value={item.progress} />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
