@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,7 @@ export default function Admin() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [defaultPrice, setDefaultPrice] = useState("25.00");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const selectedUserRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -46,6 +47,18 @@ export default function Admin() {
     queryKey: ["/api/admin/content"],
     enabled: isAuthenticated,
   });
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('selectedUserId changed to:', selectedUserId);
+  }, [selectedUserId]);
+  
+  useEffect(() => {
+    console.log('users array changed, length:', users?.length);
+    if (users.length > 0 && !selectedUserId) {
+      console.log('Users loaded but no selection - keeping current state');
+    }
+  }, [users]);
 
   const uploadSingleFile = async (fileData: typeof uploadQueue[0], index: number) => {
     try {
@@ -167,9 +180,13 @@ export default function Admin() {
   };
 
   const addFilesToQueue = (files: File[]) => {
-    console.log('Selected user ID:', selectedUserId);
+    const currentUserId = selectedUserRef.current || selectedUserId;
+    console.log('Selected user ID (state):', selectedUserId);
+    console.log('Selected user ID (ref):', selectedUserRef.current);
+    console.log('Current user ID (using):', currentUserId);
     console.log('Users data:', users);
-    if (!selectedUserId || selectedUserId.trim() === '') {
+    
+    if (!currentUserId || currentUserId.trim() === '') {
       toast({
         title: "No user selected",
         description: "Please select a user account before uploading files",
@@ -284,7 +301,9 @@ export default function Admin() {
                         console.log('User selected:', value);
                         console.log('Setting selectedUserId to:', value);
                         setSelectedUserId(value);
+                        selectedUserRef.current = value;
                         console.log('selectedUserId after set:', selectedUserId);
+                        console.log('selectedUserRef.current after set:', selectedUserRef.current);
                       }}>
                         <SelectTrigger className="w-64">
                           <SelectValue placeholder="Select a user account" />
