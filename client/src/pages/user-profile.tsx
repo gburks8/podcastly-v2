@@ -47,6 +47,7 @@ export default function UserProfile() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<QueueItem[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!match || !params?.userId) {
@@ -99,11 +100,20 @@ export default function UserProfile() {
   }
 
   // Upload functionality
-  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || !user) return;
+  const processFiles = useCallback((files: FileList | File[]) => {
+    if (!user) return;
 
     Array.from(files).forEach((file, index) => {
+      // Check if file type is supported
+      if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+        toast({
+          title: "Unsupported file type",
+          description: `${file.name} is not a supported video or image file`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const fileType = file.type.startsWith('video/') ? 'video' : 'headshot';
       const queueItem: QueueItem = {
         id: `${Date.now()}-${index}`,
@@ -120,11 +130,42 @@ export default function UserProfile() {
       
       setUploadQueue(prev => [...prev, queueItem]);
     });
+  }, [user, toast]);
 
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    
+    processFiles(files);
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  }, [user]);
+  }, [processFiles]);
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      processFiles(files);
+    }
+  }, [processFiles]);
 
   const updateQueueItem = useCallback((id: string, updates: Partial<QueueItem>) => {
     setUploadQueue(prev => prev.map(item => 
@@ -336,17 +377,50 @@ export default function UserProfile() {
                 <div className="space-y-6">
                   {/* File Upload Section */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-semibold">Upload Content</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadMutation.isPending}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Select Files
-                      </Button>
+                    <Label className="text-base font-semibold">Upload Content</Label>
+                    
+                    {/* Drag and Drop Zone */}
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                        isDragOver
+                          ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full">
+                          <Upload className="w-8 h-8 text-gray-400" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-lg font-medium">
+                            {isDragOver ? 'Drop files here' : 'Drag & drop files here'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Support for videos (MP4, MOV, AVI) and images (JPG, PNG, GIF)
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="flex-1 h-px bg-gray-200"></div>
+                          <span className="text-sm text-muted-foreground">or</span>
+                          <div className="flex-1 h-px bg-gray-200"></div>
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadMutation.isPending}
+                          className="mt-2"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Browse Files
+                        </Button>
+                      </div>
                     </div>
                     
                     <input

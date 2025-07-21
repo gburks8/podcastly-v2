@@ -21,7 +21,9 @@ Preferred communication style: Simple, everyday language.
 - Added "Create New Project" functionality directly from user profile page
 - Built comprehensive upload interface with file selection, metadata editing, and batch processing
 - Implemented upload queue system with progress tracking and error handling
-- Streamlined workflow: Admin can now click user → create project → upload content in one flow
+- Added drag and drop file upload with visual feedback and file type validation
+- Enhanced UX with intuitive upload zone supporting both drag & drop and browse methods
+- Streamlined workflow: Admin can now click user → create project → drag/drop files → upload content
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads
