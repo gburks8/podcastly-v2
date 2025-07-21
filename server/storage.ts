@@ -64,6 +64,7 @@ export interface IStorage {
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProjectName(id: string, name: string): Promise<void>;
+  reassignProject(projectId: string, newUserId: string): Promise<void>;
   deleteProject(id: string): Promise<void>;
 
   // Admin operations
@@ -368,6 +369,18 @@ export class DatabaseStorage implements IStorage {
     await db.update(projects)
       .set({ name, updatedAt: new Date() })
       .where(eq(projects.id, id));
+  }
+
+  async reassignProject(projectId: string, newUserId: string): Promise<void> {
+    // Update the project's userId
+    await db.update(projects)
+      .set({ userId: newUserId, updatedAt: new Date() })
+      .where(eq(projects.id, projectId));
+
+    // Update all content items in this project to be owned by the new user
+    await db.update(contentItems)
+      .set({ userId: newUserId })
+      .where(eq(contentItems.projectId, projectId));
   }
 
   async deleteProject(id: string): Promise<void> {

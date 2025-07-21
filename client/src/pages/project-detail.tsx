@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Video, Image, Download, Clock, Package } from "lucide-react";
+import { ArrowLeft, Video, Image, Download, Clock, Package, UserCheck } from "lucide-react";
 import { ContentCard } from "@/components/ContentCard";
 import { ProjectPricingModal } from "@/components/ProjectPricingModal";
 import { FirstDownloadInfoModal } from "@/components/FirstDownloadInfoModal";
+import { ProjectReassignDialog } from "@/components/ProjectReassignDialog";
 import type { ContentItem, Download as DownloadType, Project, ProjectSelection } from "@shared/schema";
 
 export default function ProjectDetail() {
@@ -19,6 +20,7 @@ export default function ProjectDetail() {
   const [match, params] = useRoute("/project/:projectId");
   const [isProjectPricingModalOpen, setIsProjectPricingModalOpen] = useState(false);
   const [isFirstDownloadInfoModalOpen, setIsFirstDownloadInfoModalOpen] = useState(false);
+  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
   const [pendingDownload, setPendingDownload] = useState<{ id: string; title: string } | null>(null);
   const queryClient = useQueryClient();
 
@@ -135,6 +137,16 @@ export default function ProjectDetail() {
               <Badge variant="secondary" className="text-lg py-2 px-4">
                 {videos.length} Videos • {headshots.length} Headshots
               </Badge>
+              {(user as any)?.isAdmin && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsReassignDialogOpen(true)}
+                  className="border-amber-200 hover:bg-amber-50 text-amber-700"
+                >
+                  <UserCheck className="w-4 h-4 mr-2" />
+                  Reassign Project
+                </Button>
+              )}
               <Button 
                 onClick={() => setIsProjectPricingModalOpen(true)}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
@@ -272,7 +284,17 @@ export default function ProjectDetail() {
       <FirstDownloadInfoModal
         isOpen={isFirstDownloadInfoModalOpen}
         onClose={() => setIsFirstDownloadInfoModalOpen(false)}
-        pendingDownload={pendingDownload}
+        onProceed={() => {}}
+        videoTitle=""
+        remainingFreeVideos={freeVideosRemaining}
+      />
+
+      <ProjectReassignDialog
+        isOpen={isReassignDialogOpen}
+        onClose={() => setIsReassignDialogOpen(false)}
+        projectId={params.projectId}
+        projectName={project?.name || ""}
+        currentUserId={project?.userId || ""}
       />
     </div>
   );

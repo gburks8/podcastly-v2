@@ -37,6 +37,11 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced upload workflow**: Project is now created first with custom name, then all content is associated
 - **Fixed project persistence**: Project names now persist across page navigation using database storage
 - **Improved user experience**: Admins can name projects at the onset of upload instead of post-upload editing
+- **Added project reassignment functionality**: Admins can now transfer project ownership between users
+- **Built comprehensive reassignment interface**: Created ProjectReassignDialog with user selection and confirmation
+- **Implemented backend reassignment logic**: Projects and all associated content transfer to new users
+- **Fixed project creation ID generation**: Resolved database constraint errors during project creation
+- **Enhanced admin project management**: Added reassignment button visible only to admin users in project detail view
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads

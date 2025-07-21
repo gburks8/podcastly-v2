@@ -621,6 +621,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/projects/:id/reassign", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const { newUserId } = req.body;
+      
+      // Verify the new user exists
+      const targetUser = await storage.getUser(newUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Target user not found" });
+      }
+      
+      // Verify the project exists
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      await storage.reassignProject(projectId, newUserId);
+      res.json({ message: `Project reassigned successfully to ${targetUser.firstName} ${targetUser.lastName}` });
+    } catch (error) {
+      console.error("Error reassigning project:", error);
+      res.status(500).json({ message: "Failed to reassign project" });
+    }
+  });
+
   app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
     try {
       const projectId = req.params.id;
