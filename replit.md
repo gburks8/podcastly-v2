@@ -10,6 +10,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**July 18, 2025**
+- Added user account selection feature for admin content uploads
+- Fixed broken profile images in admin Users section using Avatar components
+- Added validation to ensure user selection before file upload
+- Enhanced upload interface with user dropdown showing profile pictures and names
+- Updated upload queue structure to include target user ID for content assignment
+
 **July 17, 2025**
 - Implemented tiered pricing system with package-based purchases
 - Added new package options: "Additional 3 Videos" ($199) and "All Remaining Content" ($499)

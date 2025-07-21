@@ -28,45 +28,23 @@ export default function Admin() {
     description: string;
     duration: string;
     price: string;
+    userId: string;
     progress: number;
     status: 'pending' | 'uploading' | 'completed' | 'error';
   }>>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [defaultPrice, setDefaultPrice] = useState("25.00");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 500);
-      }
-    },
   });
 
-  const { data: allContent = [], isLoading: contentLoading } = useQuery({
+  const { data: allContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
     queryKey: ["/api/admin/content"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 500);
-      }
-    },
   });
 
   const uploadSingleFile = async (fileData: typeof uploadQueue[0], index: number) => {
@@ -92,6 +70,7 @@ export default function Admin() {
       formData.append('type', 'video');
       formData.append('duration', fileData.duration);
       formData.append('price', fileData.price);
+      formData.append('userId', fileData.userId);
 
       const response = await fetch("/api/admin/content", {
         method: "POST",
@@ -188,12 +167,22 @@ export default function Admin() {
   };
 
   const addFilesToQueue = (files: File[]) => {
+    if (!selectedUserId) {
+      toast({
+        title: "No user selected",
+        description: "Please select a user account before uploading files",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newItems = files.map(file => ({
       file,
       title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
       description: "",
       duration: "",
       price: defaultPrice,
+      userId: selectedUserId,
       progress: 0,
       status: 'pending' as const,
     }));
@@ -213,6 +202,15 @@ export default function Admin() {
 
   const uploadAllFiles = async () => {
     const pendingItems = uploadQueue.filter(item => item.status === 'pending');
+    
+    if (pendingItems.length === 0) {
+      toast({
+        title: "No files to upload",
+        description: "All files have already been processed",
+        variant: "destructive",
+      });
+      return;
+    }
     
     for (let i = 0; i < uploadQueue.length; i++) {
       if (uploadQueue[i].status === 'pending') {
@@ -278,6 +276,27 @@ export default function Admin() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-4">
+                    <div>
+                      <Label htmlFor="userSelect">Upload Content For</Label>
+                      <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                        <SelectTrigger className="w-64">
+                          <SelectValue placeholder="Select a user account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map((user: User) => (
+                            <SelectItem key={user.id} value={user.id}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={user.profileImageUrl || undefined} alt={`${user.firstName} ${user.lastName}`} />
+                                  <AvatarFallback className="text-xs">{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
+                                </Avatar>
+                                <span>{user.firstName} {user.lastName} ({user.email})</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div>
                       <Label htmlFor="defaultPrice">Default Price ($)</Label>
                       <Input
@@ -487,7 +506,7 @@ export default function Admin() {
                       <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
                           <Avatar className="w-10 h-10">
-                            <AvatarImage src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
+                            <AvatarImage src={user.profileImageUrl || undefined} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback>{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -496,11 +515,11 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant={user.hasPurchasedPremium ? "default" : "secondary"}>
-                            {user.hasPurchasedPremium ? "Premium" : "Free"}
+                          <Badge variant={(user.hasAllRemainingContent || user.hasAdditional3Videos) ? "default" : "secondary"}>
+                            {(user.hasAllRemainingContent || user.hasAdditional3Videos) ? "Premium" : "Free"}
                           </Badge>
                           <span className="text-sm text-gray-600">
-                            {new Date(user.createdAt).toLocaleDateString()}
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}
                           </span>
                         </div>
                       </div>
