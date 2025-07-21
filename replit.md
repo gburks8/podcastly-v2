@@ -52,6 +52,8 @@ Preferred communication style: Simple, everyday language.
 - **Added content deletion from projects**: Remove individual videos/headshots from projects with confirmation
 - **Enhanced video thumbnail layout**: Responsive grid layout preserving original video orientations (vertical videos display vertically)
 - **Added click-to-view functionality**: Thumbnails are clickable to open content files in new tabs with hover preview effects
+- **Implemented project link sharing**: Added "Copy Link" button to generate shareable URLs for client project access
+- **Enhanced admin workflow**: Admins can now easily share project links directly with clients from the management interface
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads

@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link } from "lucide-react";
 import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
@@ -301,6 +301,29 @@ function ProjectManagementDialog({
     },
   });
 
+  const handleCopyProjectLink = async () => {
+    const projectLink = `${window.location.origin}/project/${project.id}`;
+    try {
+      await navigator.clipboard.writeText(projectLink);
+      toast({
+        title: "Project link copied!",
+        description: "Share this link with the client to access their project",
+      });
+    } catch (err) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = projectLink;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast({
+        title: "Project link copied!",
+        description: "Share this link with the client to access their project",
+      });
+    }
+  };
+
   const handleUpdateName = () => {
     if (projectName.trim() && projectName !== project.name) {
       updateNameMutation.mutate(projectName.trim());
@@ -385,6 +408,14 @@ function ProjectManagementDialog({
             </div>
             
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyProjectLink}
+              >
+                <Link className="w-4 h-4 mr-2" />
+                Copy Link
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
