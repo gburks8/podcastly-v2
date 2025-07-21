@@ -28,6 +28,7 @@ export interface IStorage {
   // Content operations
   getContentItems(userId: string): Promise<ContentItem[]>;
   getContentItem(id: number): Promise<ContentItem | undefined>;
+  getContentItemsByUser(userId: string): Promise<ContentItem[]>;
   createContentItem(contentItem: InsertContentItem): Promise<ContentItem>;
   deleteContentItem(id: number): Promise<void>;
 
@@ -98,6 +99,14 @@ export class DatabaseStorage implements IStorage {
       .from(contentItems)
       .where(eq(contentItems.id, id));
     return item;
+  }
+
+  async getContentItemsByUser(userId: string): Promise<ContentItem[]> {
+    return await db
+      .select()
+      .from(contentItems)
+      .where(eq(contentItems.userId, userId))
+      .orderBy(desc(contentItems.createdAt));
   }
 
   async createContentItem(contentItem: InsertContentItem): Promise<ContentItem> {

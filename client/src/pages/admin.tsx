@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location, setLocation] = useLocation();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadQueue, setUploadQueue] = useState<Array<{
     file: File;
@@ -523,7 +525,11 @@ export default function Admin() {
                 ) : (
                   <div className="space-y-4">
                     {users.map((user: User) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div 
+                        key={user.id} 
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => setLocation(`/admin/user/${user.id}`)}
+                      >
                         <div className="flex items-center space-x-4">
                           <Avatar className="w-10 h-10">
                             <AvatarImage src={user.profileImageUrl || undefined} alt={`${user.firstName} ${user.lastName}`} />

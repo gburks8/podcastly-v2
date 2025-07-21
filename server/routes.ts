@@ -438,11 +438,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/content', isAuthenticated, async (req: any, res) => {
     try {
       // Simple admin check - in production, you'd want proper role-based access
-      const allContent = await storage.getAllContentItems();
-      res.json(allContent);
+      const { userId } = req.query;
+      
+      if (userId) {
+        // Get content for specific user
+        const userContent = await storage.getContentItemsByUser(userId as string);
+        res.json(userContent);
+      } else {
+        // Get all content
+        const allContent = await storage.getAllContentItems();
+        res.json(allContent);
+      }
     } catch (error) {
       console.error("Error fetching content:", error);
       res.status(500).json({ message: "Failed to fetch content" });
+    }
+  });
+
+  app.get('/api/admin/users/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 

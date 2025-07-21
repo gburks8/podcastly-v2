@@ -10,6 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**July 21, 2025**
+- Implemented user profile gallery system with project-based organization
+- Added clickable user navigation from admin Users tab
+- Created UserProfile page showing content organized into projects (batches of 12 items)
+- Added drill-down functionality to view individual videos and headshots within projects
+- Enhanced admin interface with hover effects and navigation to user profiles
+- Added server endpoints for fetching individual user data and user-specific content
+- Implemented project-based content grouping for better client content management
+
 **July 18, 2025**
 - Added user account selection feature for admin content uploads
 - Fixed broken profile images in admin Users section using Avatar components

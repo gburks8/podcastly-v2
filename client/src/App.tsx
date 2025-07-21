@@ -10,6 +10,7 @@ import Dashboard from "@/pages/dashboard";
 import Checkout from "@/pages/checkout";
 import Purchase from "@/pages/purchase";
 import Admin from "@/pages/admin";
+import UserProfile from "@/pages/user-profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/checkout" component={Checkout} />
           <Route path="/purchase/:id" component={Purchase} />
           <Route path="/admin" component={Admin} />
+          <Route path="/admin/user/:userId" component={UserProfile} />
           <Route path="*">
             <Redirect to="/" />
           </Route>
