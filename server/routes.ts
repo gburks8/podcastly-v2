@@ -721,6 +721,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
+      // Check if user owns this project or is admin
+      const isOwner = project.userId === req.user.id;
+      const isAdmin = req.user.isAdmin === true;
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied to this project" });
+      }
+      
       res.json(project);
     } catch (error) {
       console.error("Error fetching project:", error);
@@ -731,6 +739,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:id/content", isAuthenticated, async (req: any, res) => {
     try {
       const projectId = req.params.id;
+      
+      // Check if user has access to this project
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      const isOwner = project.userId === req.user.id;
+      const isAdmin = req.user.isAdmin === true;
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied to this project" });
+      }
+      
       const contentItems = await storage.getContentItemsByProject(projectId);
       res.json(contentItems);
     } catch (error) {
@@ -765,8 +787,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:id/selections", isAuthenticated, async (req: any, res) => {
     try {
       const projectId = req.params.id;
-      const userId = req.user.id;
-      const selections = await storage.getProjectSelections(userId, projectId);
+      
+      // Check if user has access to this project
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      const isOwner = project.userId === req.user.id;
+      const isAdmin = req.user.isAdmin === true;
+      
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied to this project" });
+      }
+      
+      // For admins viewing other users' projects, get the project owner's selections
+      // For project owners, get their own selections
+      const targetUserId = isAdmin && !isOwner ? project.userId : req.user.id;
+      const selections = await storage.getProjectSelections(targetUserId, projectId);
       res.json(selections);
     } catch (error) {
       console.error("Error fetching project selections:", error);
