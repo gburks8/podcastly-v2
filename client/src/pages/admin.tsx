@@ -167,6 +167,7 @@ export default function Admin() {
   };
 
   const addFilesToQueue = (files: File[]) => {
+    console.log('Selected user ID:', selectedUserId);
     if (!selectedUserId) {
       toast({
         title: "No user selected",
@@ -286,10 +287,9 @@ export default function Admin() {
                           {users.map((user: User) => (
                             <SelectItem key={user.id} value={user.id}>
                               <div className="flex items-center gap-2">
-                                <Avatar className="w-6 h-6">
-                                  <AvatarImage src={user.profileImageUrl || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                  <AvatarFallback className="text-xs">{user.firstName?.[0]}{user.lastName?.[0]}</AvatarFallback>
-                                </Avatar>
+                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
+                                  {user.firstName?.[0]}{user.lastName?.[0]}
+                                </div>
                                 <span>{user.firstName} {user.lastName} ({user.email})</span>
                               </div>
                             </SelectItem>
