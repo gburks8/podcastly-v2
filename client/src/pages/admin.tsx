@@ -20,14 +20,51 @@ import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
 function ProjectManagementTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: projects = [], isLoading: projectsLoading } = useQuery<(Project & { user: User; contentCount: number })[]>({
     queryKey: ["/api/admin/projects"],
   });
 
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const { data: projectContent = [], isLoading: projectContentLoading } = useQuery({
-    queryKey: ["/api/projects", selectedProject, "content"],
-    enabled: !!selectedProject,
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
+  });
+
+  const [selectedProject, setSelectedProject] = useState<(Project & { user: User; contentCount: number }) | null>(null);
+  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
+
+  const reassignMutation = useMutation({
+    mutationFn: async ({ projectId, newUserId }: { projectId: string; newUserId: string }) => {
+      const response = await fetch(`/api/projects/${projectId}/reassign`, {
+        method: "POST",
+        body: JSON.stringify({ newUserId }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to reassign project: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Project reassigned successfully",
+        description: "The project has been transferred to the new user",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      setSelectedProject(null);
+      setIsReassignDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to reassign project",
+        description: error.message || "An error occurred while reassigning the project",
+        variant: "destructive",
+      });
+    },
   });
 
   if (projectsLoading) {
@@ -68,7 +105,14 @@ function ProjectManagementTab() {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
-            <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div 
+              key={project.id} 
+              className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-primary/50"
+              onClick={() => {
+                setSelectedProject(project);
+                setIsReassignDialogOpen(true);
+              }}
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1">{project.name}</h3>
@@ -81,14 +125,19 @@ function ProjectManagementTab() {
                     <span>{new Date(project.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(`/project/${project.id}`, '_blank')}
-                  className="shrink-0"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(`/project/${project.id}`, '_blank');
+                    }}
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               
               <div className="flex items-center justify-between">
@@ -96,9 +145,6 @@ function ProjectManagementTab() {
                   <Badge variant="secondary" className="text-xs">
                     <Package className="w-3 h-3 mr-1" />
                     {project.contentCount} items
-                  </Badge>
-                  <Badge variant={project.pricingTier || "outline"} className="text-xs">
-                    {project.pricingTier || "No tier"}
                   </Badge>
                 </div>
               </div>
@@ -113,8 +159,117 @@ function ProjectManagementTab() {
             </div>
           )}
         </div>
+
+        {/* Project Reassignment Dialog */}
+        {selectedProject && (
+          <ProjectReassignDialog
+            isOpen={isReassignDialogOpen}
+            onClose={() => {
+              setIsReassignDialogOpen(false);
+              setSelectedProject(null);
+            }}
+            project={selectedProject}
+            users={users}
+            onReassign={(newUserId) => {
+              reassignMutation.mutate({
+                projectId: selectedProject.id,
+                newUserId,
+              });
+            }}
+            isLoading={reassignMutation.isPending}
+          />
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+// Project Reassignment Dialog Component
+function ProjectReassignDialog({
+  isOpen,
+  onClose,
+  project,
+  users,
+  onReassign,
+  isLoading,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project & { user: User; contentCount: number };
+  users: User[];
+  onReassign: (newUserId: string) => void;
+  isLoading: boolean;
+}) {
+  const [selectedUserId, setSelectedUserId] = useState("");
+
+  // Filter out the current owner from the list
+  const availableUsers = users.filter(user => user.id !== project.userId);
+
+  const handleReassign = () => {
+    if (!selectedUserId) return;
+    onReassign(selectedUserId);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-xl font-semibold mb-4">Reassign Project</h2>
+        
+        <div className="space-y-4 mb-6">
+          <div>
+            <h3 className="font-medium mb-2">Project Details</h3>
+            <div className="bg-gray-50 rounded-lg p-3">
+              <p className="font-medium">{project.name}</p>
+              <p className="text-sm text-gray-600">
+                Current Owner: {project.user.firstName} {project.user.lastName}
+              </p>
+              <p className="text-sm text-gray-500">
+                {project.contentCount} items • Created {new Date(project.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="newUser">Transfer to User</Label>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a new owner" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableUsers.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={user.profileImageUrl || ""} />
+                        <AvatarFallback className="text-xs">
+                          {user.firstName?.[0]}{user.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{user.firstName} {user.lastName} ({user.email})</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleReassign} 
+            disabled={!selectedUserId || isLoading}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            {isLoading ? "Reassigning..." : "Reassign Project"}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
