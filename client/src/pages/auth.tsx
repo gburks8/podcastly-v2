@@ -40,8 +40,15 @@ export default function Auth() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
       console.log('Already authenticated - redirecting to:', redirectTo);
+      console.log('Current URL params (already auth):', window.location.search);
+      console.log('localStorage intended_destination (already auth):', localStorage.getItem('intended_destination'));
       localStorage.removeItem('intended_destination'); // Clean up
-      window.location.href = redirectTo;
+      
+      // Use setTimeout to ensure the redirect happens after the current execution context
+      setTimeout(() => {
+        console.log('Executing redirect (already auth) to:', redirectTo);
+        window.location.href = redirectTo;
+      }, 100);
     }
   }, [user, isLoading]);
 
@@ -78,8 +85,15 @@ export default function Auth() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
       console.log('Login success - redirecting to:', redirectTo);
+      console.log('Current URL params:', window.location.search);
+      console.log('localStorage intended_destination:', localStorage.getItem('intended_destination'));
       localStorage.removeItem('intended_destination'); // Clean up
-      window.location.href = redirectTo;
+      
+      // Use setTimeout to ensure the redirect happens after the current execution context
+      setTimeout(() => {
+        console.log('Executing redirect to:', redirectTo);
+        window.location.href = redirectTo;
+      }, 100);
     },
     onError: (error: any) => {
       toast({
