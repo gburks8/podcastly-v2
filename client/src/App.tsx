@@ -31,7 +31,16 @@ function Router() {
         <>
           <Route path="/" component={Landing} />
           <Route path="/auth" component={Auth} />
-          <Route component={Auth} />
+          <Route path="*">
+            {() => {
+              // Store the intended destination for after login
+              const currentPath = window.location.pathname;
+              if (currentPath !== '/' && currentPath !== '/auth') {
+                localStorage.setItem('intended_destination', currentPath);
+              }
+              return <Auth />;
+            }}
+          </Route>
         </>
       ) : (
         <>

@@ -36,7 +36,11 @@ export default function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !isLoading) {
-      window.location.href = "/";
+      // Get the intended destination from URL params or localStorage, or default to dashboard
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      localStorage.removeItem('intended_destination'); // Clean up
+      window.location.href = redirectTo;
     }
   }, [user, isLoading]);
 
@@ -69,7 +73,11 @@ export default function Auth() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      window.location.href = "/";
+      // Get the intended destination from URL params or localStorage, or default to dashboard
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      localStorage.removeItem('intended_destination'); // Clean up
+      window.location.href = redirectTo;
     },
     onError: (error: any) => {
       toast({
