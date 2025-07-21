@@ -574,19 +574,34 @@ function ContentGrid({
     );
   }
 
+  const handleItemClick = (item: ContentItem) => {
+    if (item.type === "video" && item.fileUrl) {
+      window.open(item.fileUrl, '_blank');
+    } else if (item.type === "headshot" && item.fileUrl) {
+      window.open(item.fileUrl, '_blank');
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {items.map((item) => (
-        <div key={item.id} className="border rounded-lg overflow-hidden">
-          <div className="aspect-video bg-gray-100 flex items-center justify-center">
+        <div key={item.id} className="border rounded-lg overflow-hidden bg-white">
+          {/* Thumbnail Container */}
+          <div 
+            className="relative cursor-pointer group"
+            onClick={() => handleItemClick(item)}
+          >
             {item.thumbnailUrl ? (
-              <img
-                src={item.thumbnailUrl}
-                alt={item.title}
-                className="w-full h-full object-cover"
-              />
+              <div className="flex justify-center bg-gray-50">
+                <img
+                  src={item.thumbnailUrl}
+                  alt={item.title}
+                  className="max-w-full h-auto object-contain"
+                  style={{ maxHeight: '200px' }}
+                />
+              </div>
             ) : (
-              <div className="flex items-center justify-center w-full h-full">
+              <div className="aspect-[9/16] bg-gray-100 flex items-center justify-center min-h-[180px]">
                 {item.type === "video" ? (
                   <Video className="w-8 h-8 text-gray-400" />
                 ) : (
@@ -594,31 +609,45 @@ function ContentGrid({
                 )}
               </div>
             )}
+            
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <Eye className="w-6 h-6 text-white drop-shadow-lg" />
+              </div>
+            </div>
           </div>
           
-          <div className="p-4">
-            <h4 className="font-medium mb-1">{item.title}</h4>
-            <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1">
-                <Badge variant="outline" className="text-xs">
-                  {item.category}
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  {item.type}
-                </Badge>
-              </div>
-              
+          {/* Content Info */}
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-sm truncate flex-1">{item.title}</h4>
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => onDelete(item.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
                 disabled={isDeleting}
+                className="ml-2 h-7 w-7 p-0"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3 h-3" />
               </Button>
             </div>
+            
+            <div className="flex gap-1 mb-2">
+              <Badge variant="outline" className="text-xs">
+                {item.category}
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {item.type}
+              </Badge>
+            </div>
+            
+            {item.description && (
+              <p className="text-xs text-gray-600 truncate">{item.description}</p>
+            )}
           </div>
         </div>
       ))}
