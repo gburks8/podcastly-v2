@@ -26,6 +26,8 @@ Preferred communication style: Simple, everyday language.
 - Added overall progress bar showing total upload progress across all files
 - Implemented inline project name editing with hover-to-reveal edit functionality
 - Added keyboard shortcuts (Enter to save, Escape to cancel) for project name editing
+- Fixed video thumbnail display to preserve original aspect ratios (vertical videos show vertically)
+- Enhanced thumbnail layout with flexible grid and proper centering for all video orientations
 - Streamlined workflow: Admin can now click user → create project → drag/drop files → upload content
 
 **July 18, 2025**

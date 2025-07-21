@@ -363,19 +363,20 @@ export default function UserProfile() {
             </TabsList>
 
             <TabsContent value="videos">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {selectedProject.videos.map((video) => (
                   <Card key={video.id} className="overflow-hidden">
-                    <div className="aspect-video bg-gray-100 relative">
+                    <div className="bg-gray-100 relative flex items-center justify-center" style={{ minHeight: '200px' }}>
                       {video.thumbnailUrl && (
                         <img
                           src={video.thumbnailUrl}
                           alt={video.title}
-                          className="w-full h-full object-cover"
+                          className="max-w-full max-h-full object-contain"
+                          style={{ maxHeight: '300px' }}
                         />
                       )}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Video className="w-8 h-8 text-white opacity-70" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Video className="w-8 h-8 text-white opacity-70 drop-shadow-lg" />
                       </div>
                     </div>
                     <CardHeader className="pb-2">
