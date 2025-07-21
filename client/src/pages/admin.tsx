@@ -36,7 +36,7 @@ function ProjectManagementTab() {
   const reassignMutation = useMutation({
     mutationFn: async ({ projectId, newUserId }: { projectId: string; newUserId: string }) => {
       const response = await fetch(`/api/projects/${projectId}/reassign`, {
-        method: "POST",
+        method: "PUT",
         body: JSON.stringify({ newUserId }),
         headers: {
           "Content-Type": "application/json",
