@@ -656,6 +656,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/projects/:id/name", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const { name } = req.body;
+      
+      if (!name || !name.trim()) {
+        return res.status(400).json({ message: "Project name is required" });
+      }
+      
+      // Verify the project exists
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      await storage.updateProjectName(projectId, name.trim());
+      res.json({ message: "Project name updated successfully" });
+    } catch (error) {
+      console.error("Error updating project name:", error);
+      res.status(500).json({ message: "Failed to update project name" });
+    }
+  });
+
+  app.get("/api/projects/:id/content", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const content = await storage.getContentItemsByProject(projectId);
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching project content:", error);
+      res.status(500).json({ message: "Error fetching project content" });
+    }
+  });
+
+  app.delete("/api/admin/content/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const contentId = parseInt(req.params.id);
+      
+      if (isNaN(contentId)) {
+        return res.status(400).json({ message: "Invalid content ID" });
+      }
+      
+      // Verify the content exists
+      const content = await storage.getContentItem(contentId);
+      if (!content) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+      
+      await storage.deleteContentItem(contentId);
+      res.json({ message: "Content deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      res.status(500).json({ message: "Failed to delete content" });
+    }
+  });
+
   app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
     try {
       const projectId = req.params.id;

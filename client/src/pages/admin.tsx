@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye } from "lucide-react";
 import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
@@ -32,6 +32,7 @@ function ProjectManagementTab() {
 
   const [selectedProject, setSelectedProject] = useState<(Project & { user: User; contentCount: number }) | null>(null);
   const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
+  const [isProjectManageDialogOpen, setIsProjectManageDialogOpen] = useState(false);
 
   const reassignMutation = useMutation({
     mutationFn: async ({ projectId, newUserId }: { projectId: string; newUserId: string }) => {
@@ -110,7 +111,7 @@ function ProjectManagementTab() {
               className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer hover:border-primary/50"
               onClick={() => {
                 setSelectedProject(project);
-                setIsReassignDialogOpen(true);
+                setIsProjectManageDialogOpen(true);
               }}
             >
               <div className="flex items-start justify-between mb-3">
@@ -160,6 +161,30 @@ function ProjectManagementTab() {
           )}
         </div>
 
+        {/* Project Management Dialog */}
+        {selectedProject && (
+          <ProjectManagementDialog
+            isOpen={isProjectManageDialogOpen}
+            onClose={() => {
+              setIsProjectManageDialogOpen(false);
+              setSelectedProject(null);
+            }}
+            project={selectedProject}
+            users={users}
+            onReassign={(newUserId) => {
+              reassignMutation.mutate({
+                projectId: selectedProject.id,
+                newUserId,
+              });
+            }}
+            isReassigning={reassignMutation.isPending}
+            onOpenReassignDialog={() => {
+              setIsProjectManageDialogOpen(false);
+              setIsReassignDialogOpen(true);
+            }}
+          />
+        )}
+
         {/* Project Reassignment Dialog */}
         {selectedProject && (
           <ProjectReassignDialog
@@ -181,6 +206,423 @@ function ProjectManagementTab() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Project Management Dialog Component
+function ProjectManagementDialog({
+  isOpen,
+  onClose,
+  project,
+  users,
+  onReassign,
+  isReassigning,
+  onOpenReassignDialog,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project & { user: User; contentCount: number };
+  users: User[];
+  onReassign: (newUserId: string) => void;
+  isReassigning: boolean;
+  onOpenReassignDialog: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [projectName, setProjectName] = useState(project.name);
+  const [selectedTab, setSelectedTab] = useState("overview");
+
+  const { data: projectContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
+    queryKey: ["/api/projects", project.id, "content"],
+    enabled: isOpen,
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async (newName: string) => {
+      const response = await fetch(`/api/projects/${project.id}/name`, {
+        method: "PUT",
+        body: JSON.stringify({ name: newName }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update project name: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Project name updated",
+        description: "The project name has been updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      setIsEditingName(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update project name",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteContentMutation = useMutation({
+    mutationFn: async (contentId: number) => {
+      const response = await fetch(`/api/admin/content/${contentId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete content: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Content deleted",
+        description: "The content item has been removed from the project",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id, "content"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete content",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateName = () => {
+    if (projectName.trim() && projectName !== project.name) {
+      updateNameMutation.mutate(projectName.trim());
+    } else {
+      setIsEditingName(false);
+      setProjectName(project.name);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const videos = projectContent.filter(item => item.type === "video");
+  const headshots = projectContent.filter(item => item.type === "headshot");
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="border-b p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    className="text-xl font-semibold"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleUpdateName();
+                      if (e.key === 'Escape') {
+                        setIsEditingName(false);
+                        setProjectName(project.name);
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleUpdateName}
+                    disabled={updateNameMutation.isPending}
+                  >
+                    {updateNameMutation.isPending ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setProjectName(project.name);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold">{project.name}</h2>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  <span>{project.user.firstName} {project.user.lastName}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Package className="w-4 h-4" />
+                  <span>{project.contentCount} items</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/project/${project.id}`, '_blank')}
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View Project
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenReassignDialog}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Reassign
+              </Button>
+              <Button variant="outline" onClick={onClose}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-4 border-b">
+            <button
+              className={`pb-2 px-1 border-b-2 transition-colors ${
+                selectedTab === "overview" ? "border-primary text-primary" : "border-transparent"
+              }`}
+              onClick={() => setSelectedTab("overview")}
+            >
+              Overview
+            </button>
+            <button
+              className={`pb-2 px-1 border-b-2 transition-colors ${
+                selectedTab === "videos" ? "border-primary text-primary" : "border-transparent"
+              }`}
+              onClick={() => setSelectedTab("videos")}
+            >
+              Videos ({videos.length})
+            </button>
+            <button
+              className={`pb-2 px-1 border-b-2 transition-colors ${
+                selectedTab === "headshots" ? "border-primary text-primary" : "border-transparent"
+              }`}
+              onClick={() => setSelectedTab("headshots")}
+            >
+              Headshots ({headshots.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {contentLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
+                  <div className="w-16 h-16 bg-gray-300 rounded"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                  </div>
+                  <div className="w-20 h-8 bg-gray-300 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {selectedTab === "overview" && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Video className="w-5 h-5 text-blue-500" />
+                          <h3 className="font-medium">Videos</h3>
+                        </div>
+                        <p className="text-2xl font-bold">{videos.length}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Image className="w-5 h-5 text-green-500" />
+                          <h3 className="font-medium">Headshots</h3>
+                        </div>
+                        <p className="text-2xl font-bold">{headshots.length}</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package className="w-5 h-5 text-purple-500" />
+                          <h3 className="font-medium">Total Items</h3>
+                        </div>
+                        <p className="text-2xl font-bold">{project.contentCount}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div>
+                    <h3 className="font-medium mb-3">Recent Uploads</h3>
+                    <div className="space-y-2">
+                      {projectContent.slice(0, 5).map((item) => (
+                        <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+                            {item.type === "video" ? (
+                              <Video className="w-4 h-4 text-gray-600" />
+                            ) : (
+                              <Image className="w-4 h-4 text-gray-600" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.title}</p>
+                            <p className="text-xs text-gray-500">
+                              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown date'}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {item.type}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedTab === "videos" && (
+                <ContentGrid 
+                  items={videos} 
+                  onDelete={(id) => deleteContentMutation.mutate(id)}
+                  isDeleting={deleteContentMutation.isPending}
+                />
+              )}
+
+              {selectedTab === "headshots" && (
+                <ContentGrid 
+                  items={headshots} 
+                  onDelete={(id) => deleteContentMutation.mutate(id)}
+                  isDeleting={deleteContentMutation.isPending}
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t p-4 bg-gray-50">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Last updated: {new Date(project.updatedAt).toLocaleDateString()}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Content
+              </Button>
+              <Button variant="outline" size="sm">
+                <Send className="w-4 h-4 mr-2" />
+                Resend Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Content Grid Component for displaying videos/headshots
+function ContentGrid({ 
+  items, 
+  onDelete, 
+  isDeleting 
+}: { 
+  items: ContentItem[];
+  onDelete: (id: number) => void;
+  isDeleting: boolean;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <Package className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+        <p>No {items.length === 0 ? "content" : "items"} found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {items.map((item) => (
+        <div key={item.id} className="border rounded-lg overflow-hidden">
+          <div className="aspect-video bg-gray-100 flex items-center justify-center">
+            {item.thumbnailUrl ? (
+              <img
+                src={item.thumbnailUrl}
+                alt={item.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full h-full">
+                {item.type === "video" ? (
+                  <Video className="w-8 h-8 text-gray-400" />
+                ) : (
+                  <Image className="w-8 h-8 text-gray-400" />
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="p-4">
+            <h4 className="font-medium mb-1">{item.title}</h4>
+            <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex gap-1">
+                <Badge variant="outline" className="text-xs">
+                  {item.category}
+                </Badge>
+                <Badge variant="secondary" className="text-xs">
+                  {item.type}
+                </Badge>
+              </div>
+              
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(item.id)}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

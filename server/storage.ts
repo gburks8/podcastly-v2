@@ -71,6 +71,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getAllContentItems(): Promise<ContentItem[]>;
   getAllProjects(): Promise<(Project & { user: User; contentCount: number })[]>;
+  deleteContentItem(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -139,10 +140,6 @@ export class DatabaseStorage implements IStorage {
       .values(contentItem)
       .returning();
     return item;
-  }
-
-  async deleteContentItem(id: number): Promise<void> {
-    await db.delete(contentItems).where(eq(contentItems.id, id));
   }
 
   // Project-based selection operations
@@ -415,6 +412,10 @@ export class DatabaseStorage implements IStorage {
       user: row.user!,
       contentCount: row.contentCount || 0,
     }));
+  }
+
+  async deleteContentItem(id: number): Promise<void> {
+    await db.delete(contentItems).where(eq(contentItems.id, id));
   }
 }
 
