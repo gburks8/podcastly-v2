@@ -279,19 +279,17 @@ export default function Admin() {
                   <div className="flex items-center gap-4">
                     <div>
                       <Label htmlFor="userSelect">Upload Content For</Label>
-                      <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                      <Select value={selectedUserId} onValueChange={(value) => {
+                        console.log('User selected:', value);
+                        setSelectedUserId(value);
+                      }}>
                         <SelectTrigger className="w-64">
                           <SelectValue placeholder="Select a user account" />
                         </SelectTrigger>
                         <SelectContent>
                           {users.map((user: User) => (
                             <SelectItem key={user.id} value={user.id}>
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
-                                  {user.firstName?.[0]}{user.lastName?.[0]}
-                                </div>
-                                <span>{user.firstName} {user.lastName} ({user.email})</span>
-                              </div>
+                              {user.firstName} {user.lastName} ({user.email})
                             </SelectItem>
                           ))}
                         </SelectContent>
