@@ -101,16 +101,24 @@ export default function Auth() {
       console.log('localStorage intended_destination:', localStorage.getItem('intended_destination'));
       console.log('urlParams.get("redirect"):', urlParams.get('redirect'));
       console.log('=== END LOGIN DEBUG ===');
+      console.log('About to remove localStorage intended_destination...');
+      console.log('Before cleanup - localStorage intended_destination:', localStorage.getItem('intended_destination'));
       localStorage.removeItem('intended_destination'); // Clean up
+      console.log('After cleanup - localStorage intended_destination:', localStorage.getItem('intended_destination'));
       
       // Use setTimeout to ensure the redirect happens after the current execution context
       setTimeout(() => {
-        console.log('Executing redirect to:', redirectTo);
+        console.log('=== TIMEOUT REDIRECT EXECUTING ===');
+        console.log('Final redirect to:', redirectTo);
+        console.log('Redirect method:', redirectTo === '/' ? 'setLocation' : 'window.location.href');
         if (redirectTo === '/') {
+          console.log('Using setLocation for dashboard redirect');
           setLocation('/');
         } else {
+          console.log('Using window.location.href for project redirect');
           window.location.href = redirectTo;
         }
+        console.log('=== REDIRECT COMPLETED ===');
       }, 100);
     },
     onError: (error: any) => {
