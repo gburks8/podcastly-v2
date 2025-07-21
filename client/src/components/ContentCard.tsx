@@ -38,7 +38,9 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
         title: "Content Selected",
         description: "This content has been added to your free selections",
       });
+      // Invalidate all queries that might show project selections
       queryClient.invalidateQueries({ queryKey: ["/api/content/selections"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${content.projectId}/selections`] });
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
