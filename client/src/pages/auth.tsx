@@ -41,23 +41,9 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
-      console.log('=== ALREADY AUTH REDIRECT DEBUG ===');
-      console.log('Already authenticated - redirecting to:', redirectTo);
-      console.log('Current URL (full):', window.location.href);
-      console.log('Current URL params (already auth):', window.location.search);
-      console.log('localStorage intended_destination (already auth):', localStorage.getItem('intended_destination'));
-      console.log('urlParams.get("redirect"):', urlParams.get('redirect'));
-      console.log('=== END ALREADY AUTH DEBUG ===');
+      // Force immediate redirect for already authenticated users
       localStorage.removeItem('intended_destination'); // Clean up
-      
-      // Use setTimeout with longer delay and always use window.location.href for reliability
-      setTimeout(() => {
-        console.log('=== ALREADY AUTH TIMEOUT REDIRECT ===');
-        console.log('Executing redirect (already auth) to:', redirectTo);
-        console.log('Using window.location.href for reliable redirect');
-        window.location.href = redirectTo;
-        console.log('=== ALREADY AUTH REDIRECT COMPLETED ===');
-      }, 500);
+      window.location.href = redirectTo;
     }
   }, [user, isLoading]);
 
@@ -93,26 +79,10 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
-      console.log('=== LOGIN SUCCESS REDIRECT DEBUG ===');
-      console.log('Login success - redirecting to:', redirectTo);
-      console.log('Current URL (full):', window.location.href);
-      console.log('Current URL params:', window.location.search);
-      console.log('localStorage intended_destination:', localStorage.getItem('intended_destination'));
-      console.log('urlParams.get("redirect"):', urlParams.get('redirect'));
-      console.log('=== END LOGIN DEBUG ===');
-      console.log('About to remove localStorage intended_destination...');
-      console.log('Before cleanup - localStorage intended_destination:', localStorage.getItem('intended_destination'));
-      localStorage.removeItem('intended_destination'); // Clean up
-      console.log('After cleanup - localStorage intended_destination:', localStorage.getItem('intended_destination'));
       
-      // Use setTimeout with longer delay to ensure authentication state is fully updated
-      setTimeout(() => {
-        console.log('=== TIMEOUT REDIRECT EXECUTING ===');
-        console.log('Final redirect to:', redirectTo);
-        console.log('Always using window.location.href for reliable redirect');
-        window.location.href = redirectTo;
-        console.log('=== REDIRECT COMPLETED ===');
-      }, 500); // Increased timeout to allow auth state to stabilize
+      // Force immediate redirect without setTimeout - the auth state is already updated by setQueryData
+      localStorage.removeItem('intended_destination'); // Clean up
+      window.location.href = redirectTo;
     },
     onError: (error: any) => {
       toast({
