@@ -589,10 +589,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/projects", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { id, name } = req.body;
+      const { name } = req.body;
+      
+      // Generate a UUID for the project ID
+      const projectId = `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const projectData = {
-        id,
+        id: projectId,
         userId,
         name,
       };
