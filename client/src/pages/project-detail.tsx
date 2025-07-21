@@ -18,6 +18,29 @@ export default function ProjectDetail() {
   // Add visible alert to debug
   if (typeof window !== 'undefined') {
     document.title = 'PROJECT DETAIL LOADED - ' + window.location.pathname;
+    
+    // Temporarily block any redirects to help debug
+    const originalAssign = window.location.assign;
+    const originalReplace = window.location.replace;
+    let originalHref = window.location.href;
+    
+    Object.defineProperty(window.location, 'href', {
+      set: function(url) {
+        console.log('🚨 BLOCKED REDIRECT ATTEMPT:', url);
+        console.log('From:', originalHref);
+        console.log('Stack trace:', new Error().stack);
+        if (url.includes('project')) {
+          console.log('✅ Allowing project redirect');
+          originalHref = url;
+        } else {
+          console.log('❌ BLOCKING non-project redirect');
+          return;
+        }
+      },
+      get: function() {
+        return originalHref;
+      }
+    });
   }
   
   console.log('=== PROJECT DETAIL COMPONENT MOUNTED ===');
@@ -113,6 +136,7 @@ export default function ProjectDetail() {
   const freeVideosRemaining = Math.max(0, (project.freeVideoLimit || 3) - freeSelectionsUsed);
 
   const handleBackToDashboard = () => {
+    console.log('🔄 Manual back to dashboard button clicked');
     window.location.href = "/";
   };
 
