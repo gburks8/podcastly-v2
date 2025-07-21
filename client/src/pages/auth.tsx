@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export default function Auth() {
   const { user, isLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("login");
+  const [, setLocation] = useLocation();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -47,7 +49,11 @@ export default function Auth() {
       // Use setTimeout to ensure the redirect happens after the current execution context
       setTimeout(() => {
         console.log('Executing redirect (already auth) to:', redirectTo);
-        window.location.href = redirectTo;
+        if (redirectTo === '/') {
+          setLocation('/');
+        } else {
+          window.location.href = redirectTo;
+        }
       }, 100);
     }
   }, [user, isLoading]);
@@ -92,7 +98,11 @@ export default function Auth() {
       // Use setTimeout to ensure the redirect happens after the current execution context
       setTimeout(() => {
         console.log('Executing redirect to:', redirectTo);
-        window.location.href = redirectTo;
+        if (redirectTo === '/') {
+          setLocation('/');
+        } else {
+          window.location.href = redirectTo;
+        }
       }, 100);
     },
     onError: (error: any) => {
