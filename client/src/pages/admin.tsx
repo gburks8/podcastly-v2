@@ -302,12 +302,13 @@ function ProjectManagementDialog({
   });
 
   const handleCopyProjectLink = async () => {
-    const projectLink = `${window.location.origin}/project/${project.id}`;
+    // Create URL with redirect parameter for proper authentication flow
+    const projectLink = `${window.location.origin}/auth?redirect=${encodeURIComponent(`/project/${project.id}`)}`;
     try {
       await navigator.clipboard.writeText(projectLink);
       toast({
         title: "Project link copied!",
-        description: "Share this link with the client to access their project",
+        description: "Share this link with the client. They'll be taken directly to their project after login.",
       });
     } catch (err) {
       // Fallback for browsers that don't support clipboard API
@@ -319,7 +320,7 @@ function ProjectManagementDialog({
       document.body.removeChild(textArea);
       toast({
         title: "Project link copied!",
-        description: "Share this link with the client to access their project",
+        description: "Share this link with the client. They'll be taken directly to their project after login.",
       });
     }
   };

@@ -39,6 +39,7 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      console.log('Already authenticated - redirecting to:', redirectTo);
       localStorage.removeItem('intended_destination'); // Clean up
       window.location.href = redirectTo;
     }
@@ -76,6 +77,7 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      console.log('Login success - redirecting to:', redirectTo);
       localStorage.removeItem('intended_destination'); // Clean up
       window.location.href = redirectTo;
     },
