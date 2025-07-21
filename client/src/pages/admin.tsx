@@ -168,7 +168,8 @@ export default function Admin() {
 
   const addFilesToQueue = (files: File[]) => {
     console.log('Selected user ID:', selectedUserId);
-    if (!selectedUserId) {
+    console.log('Users data:', users);
+    if (!selectedUserId || selectedUserId.trim() === '') {
       toast({
         title: "No user selected",
         description: "Please select a user account before uploading files",
@@ -281,7 +282,9 @@ export default function Admin() {
                       <Label htmlFor="userSelect">Upload Content For</Label>
                       <Select value={selectedUserId} onValueChange={(value) => {
                         console.log('User selected:', value);
+                        console.log('Setting selectedUserId to:', value);
                         setSelectedUserId(value);
+                        console.log('selectedUserId after set:', selectedUserId);
                       }}>
                         <SelectTrigger className="w-64">
                           <SelectValue placeholder="Select a user account" />
