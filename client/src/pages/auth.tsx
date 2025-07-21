@@ -38,11 +38,17 @@ export default function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !isLoading) {
+      // Only redirect if we're actually on the auth page
+      if (window.location.pathname !== '/auth') {
+        console.log('Already authenticated but not on auth page, skipping redirect');
+        return;
+      }
+      
       // Get the intended destination from URL params only - more reliable than localStorage
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get('redirect');
       
-      console.log('Already authenticated redirect:', {
+      console.log('Already authenticated redirect from auth page:', {
         redirectParam,
         currentURL: window.location.href,
         fullSearch: window.location.search

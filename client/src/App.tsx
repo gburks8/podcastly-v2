@@ -17,7 +17,15 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  console.log('Router render:', {
+    isAuthenticated,
+    isLoading,
+    currentPath: window.location.pathname,
+    url: window.location.href
+  });
+
   if (isLoading) {
+    console.log('Router showing loading state');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
