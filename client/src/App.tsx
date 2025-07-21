@@ -33,10 +33,13 @@ function Router() {
           <Route path="/auth" component={Auth} />
           <Route path="*">
             {() => {
-              // Store the intended destination for after login
+              // Redirect to auth with the intended destination as URL parameter
               const currentPath = window.location.pathname + window.location.search;
               if (currentPath !== '/' && currentPath !== '/auth') {
-                localStorage.setItem('intended_destination', currentPath);
+                // Encode the path to safely pass as URL parameter
+                const redirectUrl = `/auth?redirect=${encodeURIComponent(currentPath)}`;
+                window.location.href = redirectUrl;
+                return null;
               }
               return <Auth />;
             }}

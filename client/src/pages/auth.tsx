@@ -38,21 +38,18 @@ export default function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !isLoading) {
-      // Get the intended destination from URL params or localStorage, or default to dashboard
+      // Get the intended destination from URL params only - more reliable than localStorage
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get('redirect');
-      const storedDestination = localStorage.getItem('intended_destination');
       
       console.log('Already authenticated redirect:', {
         redirectParam,
-        storedDestination,
-        currentURL: window.location.href
+        currentURL: window.location.href,
+        fullSearch: window.location.search
       });
       
-      const redirectTo = redirectParam || storedDestination || '/';
+      const redirectTo = redirectParam ? decodeURIComponent(redirectParam) : '/';
       
-      // Force immediate redirect for already authenticated users
-      localStorage.removeItem('intended_destination'); // Clean up
       console.log('Redirecting already-auth user to:', redirectTo);
       window.location.href = redirectTo;
     }
@@ -87,21 +84,18 @@ export default function Auth() {
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      // Get the intended destination from URL params or localStorage, or default to dashboard
+      // Get the intended destination from URL params only - more reliable than localStorage
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get('redirect');
-      const storedDestination = localStorage.getItem('intended_destination');
       
       console.log('Login success redirect:', {
         redirectParam,
-        storedDestination,
-        currentURL: window.location.href
+        currentURL: window.location.href,
+        fullSearch: window.location.search
       });
       
-      const redirectTo = redirectParam || storedDestination || '/';
+      const redirectTo = redirectParam ? decodeURIComponent(redirectParam) : '/';
       
-      // Force immediate redirect without setTimeout - the auth state is already updated by setQueryData
-      localStorage.removeItem('intended_destination'); // Clean up
       console.log('Redirecting after login to:', redirectTo);
       window.location.href = redirectTo;
     },
