@@ -15,32 +15,9 @@ import { ProjectReassignDialog } from "@/components/ProjectReassignDialog";
 import type { ContentItem, Download as DownloadType, Project, ProjectSelection } from "@shared/schema";
 
 export default function ProjectDetail() {
-  // Add visible alert to debug
+  // Set document title for debugging
   if (typeof window !== 'undefined') {
     document.title = 'PROJECT DETAIL LOADED - ' + window.location.pathname;
-    
-    // Temporarily block any redirects to help debug
-    const originalAssign = window.location.assign;
-    const originalReplace = window.location.replace;
-    let originalHref = window.location.href;
-    
-    Object.defineProperty(window.location, 'href', {
-      set: function(url) {
-        console.log('🚨 BLOCKED REDIRECT ATTEMPT:', url);
-        console.log('From:', originalHref);
-        console.log('Stack trace:', new Error().stack);
-        if (url.includes('project')) {
-          console.log('✅ Allowing project redirect');
-          originalHref = url;
-        } else {
-          console.log('❌ BLOCKING non-project redirect');
-          return;
-        }
-      },
-      get: function() {
-        return originalHref;
-      }
-    });
   }
   
   console.log('=== PROJECT DETAIL COMPONENT MOUNTED ===');
