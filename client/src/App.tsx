@@ -35,7 +35,10 @@ function Router() {
             {() => {
               // Store the intended destination for after login
               const currentPath = window.location.pathname + window.location.search;
-              console.log('Storing intended destination:', currentPath);
+              console.log('=== STORING INTENDED DESTINATION ===');
+              console.log('Current path being stored:', currentPath);
+              console.log('Full URL:', window.location.href);
+              console.log('=== END STORE DESTINATION ===');
               if (currentPath !== '/' && currentPath !== '/auth') {
                 localStorage.setItem('intended_destination', currentPath);
               }

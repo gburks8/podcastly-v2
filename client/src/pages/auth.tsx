@@ -41,9 +41,13 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      console.log('=== ALREADY AUTH REDIRECT DEBUG ===');
       console.log('Already authenticated - redirecting to:', redirectTo);
+      console.log('Current URL (full):', window.location.href);
       console.log('Current URL params (already auth):', window.location.search);
       console.log('localStorage intended_destination (already auth):', localStorage.getItem('intended_destination'));
+      console.log('urlParams.get("redirect"):', urlParams.get('redirect'));
+      console.log('=== END ALREADY AUTH DEBUG ===');
       localStorage.removeItem('intended_destination'); // Clean up
       
       // Use setTimeout to ensure the redirect happens after the current execution context
@@ -90,9 +94,13 @@ export default function Auth() {
       // Get the intended destination from URL params or localStorage, or default to dashboard
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('intended_destination') || '/';
+      console.log('=== LOGIN SUCCESS REDIRECT DEBUG ===');
       console.log('Login success - redirecting to:', redirectTo);
+      console.log('Current URL (full):', window.location.href);
       console.log('Current URL params:', window.location.search);
       console.log('localStorage intended_destination:', localStorage.getItem('intended_destination'));
+      console.log('urlParams.get("redirect"):', urlParams.get('redirect'));
+      console.log('=== END LOGIN DEBUG ===');
       localStorage.removeItem('intended_destination'); // Clean up
       
       // Use setTimeout to ensure the redirect happens after the current execution context
