@@ -23,6 +23,7 @@ Preferred communication style: Simple, everyday language.
 - Implemented upload queue system with progress tracking and error handling
 - Added drag and drop file upload with visual feedback and file type validation
 - Enhanced UX with intuitive upload zone supporting both drag & drop and browse methods
+- Added overall progress bar showing total upload progress across all files
 - Streamlined workflow: Admin can now click user → create project → drag/drop files → upload content
 
 **July 18, 2025**

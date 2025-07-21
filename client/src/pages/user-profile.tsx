@@ -437,7 +437,18 @@ export default function UserProfile() {
                   {uploadQueue.length > 0 && (
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <Label className="text-base font-semibold">Upload Queue ({uploadQueue.length})</Label>
+                        <div className="flex items-center gap-4 flex-1">
+                          <Label className="text-base font-semibold">Upload Queue ({uploadQueue.length})</Label>
+                          {uploadQueue.some(item => item.status === 'uploading' || item.status === 'completed') && (
+                            <div className="flex-1 max-w-xs">
+                              <div className="flex justify-between text-sm mb-1">
+                                <span>Overall Progress</span>
+                                <span>{Math.round((uploadQueue.filter(item => item.status === 'completed').length / uploadQueue.length) * 100)}%</span>
+                              </div>
+                              <Progress value={(uploadQueue.filter(item => item.status === 'completed').length / uploadQueue.length) * 100} />
+                            </div>
+                          )}
+                        </div>
                         <Button
                           onClick={processUploadQueue}
                           disabled={uploadMutation.isPending || uploadQueue.every(item => item.status !== 'pending')}
