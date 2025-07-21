@@ -62,7 +62,7 @@ export function FirstDownloadInfoModal({
                   Choose up to <strong>3 videos</strong> for complimentary download.
                 </p>
                 <div className="text-sm text-blue-600 font-medium">
-                  {3 - remainingFreeVideos}/3 videos selected
+                  {isNaN(remainingFreeVideos) ? 0 : Math.max(0, 3 - remainingFreeVideos)}/3 videos selected
                 </div>
               </div>
 

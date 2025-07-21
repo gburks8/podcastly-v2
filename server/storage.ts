@@ -40,18 +40,24 @@ export interface IStorage {
   createProjectSelection(selection: InsertProjectSelection): Promise<ProjectSelection>;
   selectProjectContent(userId: string, projectId: string, contentItemId: number, selectionType: string): Promise<void>;
   getProjectSelections(userId: string, projectId: string): Promise<ProjectSelection[]>;
+  getFreeSelections(userId: string): Promise<any[]>; // For backward compatibility
   canSelectFreeContent(userId: string, projectId: string): Promise<boolean>;
 
   // Project payment operations
   createProjectPayment(payment: InsertProjectPayment): Promise<ProjectPayment>;
+  createPayment(payment: any): Promise<any>; // For backward compatibility
   getProjectPaymentByStripeId(stripePaymentIntentId: string): Promise<ProjectPayment | undefined>;
   updateProjectPaymentStatus(stripePaymentIntentId: string, status: string): Promise<void>;
+  updatePaymentStatus(stripePaymentIntentId: string, status: string): Promise<void>; // For backward compatibility
   hasProjectPackageAccess(userId: string, projectId: string, packageType: string): Promise<boolean>;
+  hasPackageAccess(userId: string, packageType: string): Promise<boolean>; // For backward compatibility
+  updateUserPackagePurchase(userId: string, packageType: string): Promise<void>;
 
   // Download operations
   createDownload(download: InsertDownload): Promise<Download>;
   getDownloadHistory(userId: string): Promise<(Download & { contentItem: ContentItem })[]>;
   hasDownloadAccess(userId: string, contentItemId: number): Promise<boolean>;
+  hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean>; // For backward compatibility
 
   // Project operations
   getUserProjects(userId: string): Promise<Project[]>;
@@ -166,6 +172,18 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(projectSelections.selectedAt));
   }
 
+  async getFreeSelections(userId: string): Promise<any[]> {
+    // Backward compatibility - return all free selections across all projects for this user
+    return await db
+      .select()
+      .from(projectSelections)
+      .where(and(
+        eq(projectSelections.userId, userId),
+        eq(projectSelections.selectionType, 'free')
+      ))
+      .orderBy(desc(projectSelections.selectedAt));
+  }
+
   async canSelectFreeContent(userId: string, projectId: string): Promise<boolean> {
     const freeSelections = await db
       .select()
@@ -189,6 +207,28 @@ export class DatabaseStorage implements IStorage {
       .values(payment)
       .returning();
     return paymentRecord;
+  }
+
+  async createPayment(payment: any): Promise<any> {
+    // Backward compatibility wrapper for createProjectPayment
+    return this.createProjectPayment(payment);
+  }
+
+  async updatePaymentStatus(stripePaymentIntentId: string, status: string): Promise<void> {
+    // Backward compatibility wrapper
+    return this.updateProjectPaymentStatus(stripePaymentIntentId, status);
+  }
+
+  async hasPackageAccess(userId: string, packageType: string): Promise<boolean> {
+    // Backward compatibility - this would need a project context in practice
+    // For now, return false as this method should use hasProjectPackageAccess instead
+    return false;
+  }
+
+  async updateUserPackagePurchase(userId: string, packageType: string): Promise<void> {
+    // This method doesn't make sense in project-based system
+    // Package purchases are already tracked in projectPayments table
+    // No additional user-level tracking needed
   }
 
   async getProjectPaymentByStripeId(stripePaymentIntentId: string): Promise<ProjectPayment | undefined> {
@@ -280,7 +320,30 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
+  async hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean> {
+    // Backward compatibility - check if user has purchased any package that gives access to this content
+    const contentItem = await this.getContentItem(contentItemId);
+    if (!contentItem || !contentItem.projectId) return false;
 
+    // Check if user has selected this content as free
+    const [selection] = await db
+      .select()
+      .from(projectSelections)
+      .where(
+        and(
+          eq(projectSelections.userId, userId),
+          eq(projectSelections.contentItemId, contentItemId)
+        )
+      );
+    
+    if (selection) return true;
+
+    // Check if user has package access for this project
+    const hasAdditional3Access = await this.hasProjectPackageAccess(userId, contentItem.projectId, 'additional_3_videos');
+    const hasAllContentAccess = await this.hasProjectPackageAccess(userId, contentItem.projectId, 'all_content');
+
+    return hasAdditional3Access || hasAllContentAccess;
+  }
 
   // Project operations
   async getUserProjects(userId: string): Promise<Project[]> {
