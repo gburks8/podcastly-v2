@@ -68,38 +68,69 @@ export default function UserProfile() {
     enabled: isAuthenticated && !!params.userId,
   });
 
-  const { data: userContent = [] } = useQuery<ContentItem[]>({
-    queryKey: ["/api/admin/content", "user", params.userId],
+  const { data: userProjects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects", "user", params.userId],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/content?userId=${params.userId}`, {
+      // Get projects for this user
+      const projectsResponse = await fetch(`/api/admin/users/${params.userId}/projects`, {
         credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to fetch user content");
-      return response.json();
+      if (!projectsResponse.ok) {
+        // If no projects endpoint exists yet, fetch content and group into projects
+        const contentResponse = await fetch(`/api/admin/content?userId=${params.userId}`, {
+          credentials: "include",
+        });
+        if (!contentResponse.ok) throw new Error("Failed to fetch user content");
+        const content: ContentItem[] = await contentResponse.json();
+        
+        // Group content into projects (batches of 12)
+        const projects: Project[] = [];
+        for (let i = 0; i < content.length; i += 12) {
+          const batch = content.slice(i, i + 12);
+          const projectId = `project-${Math.floor(i / 12) + 1}`;
+          projects.push({
+            id: projectId,
+            name: `Project ${Math.floor(i / 12) + 1}`,
+            createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
+            videos: batch.filter(item => item.type === 'video'),
+            headshots: batch.filter(item => item.type === 'headshot'),
+            totalItems: batch.length,
+          });
+        }
+        return projects;
+      }
+      return projectsResponse.json();
     },
     enabled: isAuthenticated && !!params.userId,
   });
 
-  // Group content into projects (batches of 12)
-  const projects: Project[] = [];
-  const sortedContent = [...userContent].sort((a, b) => 
-    new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  );
-  
-  for (let i = 0; i < sortedContent.length; i += 12) {
-    const batch = sortedContent.slice(i, i + 12);
-    const videos = batch.filter(item => item.type === 'video');
-    const headshots = batch.filter(item => item.type === 'headshot');
-    
-    projects.push({
-      id: `project-${Math.floor(i / 12) + 1}`,
-      name: `Project ${Math.floor(i / 12) + 1}`,
-      createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
-      videos,
-      headshots,
-      totalItems: batch.length,
-    });
-  }
+  // Update project name mutation
+  const updateProjectNameMutation = useMutation({
+    mutationFn: async ({ projectId, newName }: { projectId: string; newName: string }) => {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: newName }),
+      });
+      if (!response.ok) throw new Error('Failed to update project name');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", "user", params.userId] });
+      toast({
+        title: "Project updated",
+        description: "Project name has been saved successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: "Could not update project name. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Upload functionality
   const processFiles = useCallback((files: FileList | File[]) => {
@@ -250,21 +281,21 @@ export default function UserProfile() {
 
   const handleSaveProjectName = useCallback(() => {
     if (selectedProject && projectNameInput.trim()) {
-      // Update the selected project locally for immediate UI feedback
+      // Update locally for immediate feedback
+      const newName = projectNameInput.trim();
       setSelectedProject({
         ...selectedProject,
-        name: projectNameInput.trim()
+        name: newName
       });
       setEditingProjectName(false);
       
-      // Here you could add an API call to save the project name to the database
-      // For now, we'll just update it locally since projects are generated from content batches
-      toast({
-        title: "Project name updated",
-        description: `Project renamed to "${projectNameInput.trim()}"`,
+      // Save to database via API
+      updateProjectNameMutation.mutate({ 
+        projectId: selectedProject.id, 
+        newName 
       });
     }
-  }, [selectedProject, projectNameInput, toast]);
+  }, [selectedProject, projectNameInput, updateProjectNameMutation]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingProjectName(false);
@@ -424,7 +455,7 @@ export default function UserProfile() {
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">Projects</h2>
-              <Badge variant="outline">{projects.length} projects</Badge>
+              <Badge variant="outline">{userProjects.length} projects</Badge>
             </div>
             
             <Dialog open={showCreateProject} onOpenChange={setShowCreateProject}>
@@ -642,7 +673,7 @@ export default function UserProfile() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project) => (
+            {userProjects.map((project) => (
               <Card key={project.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedProject(project)}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -686,7 +717,7 @@ export default function UserProfile() {
             ))}
           </div>
 
-          {projects.length === 0 && (
+          {userProjects.length === 0 && (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Video className="w-12 h-12 text-muted-foreground mb-4" />

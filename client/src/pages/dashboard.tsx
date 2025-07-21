@@ -41,60 +41,58 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: allContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
-    queryKey: ["/api/content"],
+  const { data: userProjects = [], isLoading: contentLoading } = useQuery({
+    queryKey: ["/api/projects"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
+    queryFn: async (): Promise<Project[]> => {
+      // Try to get actual projects first
+      try {
+        const projectsResponse = await fetch("/api/projects", {
+          credentials: "include",
         });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 500);
+        if (projectsResponse.ok) {
+          return projectsResponse.json();
+        }
+      } catch (error) {
+        // Fallback to content-based projects if projects endpoint fails
       }
-    },
+      
+      // Fallback: fetch content and group into projects
+      const contentResponse = await fetch("/api/content", {
+        credentials: "include",
+      });
+      if (!contentResponse.ok) throw new Error("Failed to fetch content");
+      const content: ContentItem[] = await contentResponse.json();
+      
+      // Group content into projects (batches of 12)
+      const projects: Project[] = [];
+      const sortedContent = [...content].sort((a, b) => 
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      
+      for (let i = 0; i < sortedContent.length; i += 12) {
+        const batch = sortedContent.slice(i, i + 12);
+        const projectId = `project-${Math.floor(i / 12) + 1}`;
+        projects.push({
+          id: projectId,
+          name: `Project ${Math.floor(i / 12) + 1}`,
+          createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
+          videos: batch.filter(item => item.type === 'video'),
+          headshots: batch.filter(item => item.type === 'headshot'),
+          totalItems: batch.length,
+        });
+      }
+      
+      return projects;
+    }
   });
 
-  const { data: downloadHistory = [] } = useQuery<DownloadType[]>({
+  const { data: downloadHistory = [] } = useQuery({
     queryKey: ["/api/downloads/history"],
     enabled: isAuthenticated,
-    onError: (error: Error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/auth";
-        }, 500);
-      }
-    },
   });
 
-  // Group content into projects (batches of 12)
-  const projects: Project[] = [];
-  const sortedContent = [...allContent].sort((a, b) => 
-    new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  );
-  
-  for (let i = 0; i < sortedContent.length; i += 12) {
-    const batch = sortedContent.slice(i, i + 12);
-    const videos = batch.filter(item => item.type === 'video');
-    const headshots = batch.filter(item => item.type === 'headshot');
-    
-    projects.push({
-      id: `project-${Math.floor(i / 12) + 1}`,
-      name: `Project ${Math.floor(i / 12) + 1}`,
-      createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
-      videos,
-      headshots,
-      totalItems: batch.length,
-    });
-  }
+  // Projects are now fetched from the API
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -198,7 +196,7 @@ export default function Dashboard() {
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{projects.length}</div>
+              <div className="text-2xl font-bold">{userProjects.length}</div>
             </CardContent>
           </Card>
           <Card>
@@ -208,7 +206,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {allContent.filter(item => item.type === 'video').length}
+                {userProjects.reduce((acc, project) => acc + project.videos.length, 0)}
               </div>
             </CardContent>
           </Card>
@@ -219,7 +217,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {allContent.filter(item => item.type === 'headshot').length}
+                {userProjects.reduce((acc, project) => acc + project.headshots.length, 0)}
               </div>
             </CardContent>
           </Card>
@@ -229,12 +227,12 @@ export default function Dashboard() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-gray-900">Your Projects</h3>
-            <Badge variant="secondary">{projects.length} projects</Badge>
+            <Badge variant="secondary">{userProjects.length} projects</Badge>
           </div>
 
-          {projects.length > 0 ? (
+          {userProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
+              {userProjects.map((project) => (
                 <Card 
                   key={project.id} 
                   className="cursor-pointer hover:shadow-lg transition-shadow duration-200"

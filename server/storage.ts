@@ -4,6 +4,7 @@ import {
   payments,
   downloads,
   freeSelections,
+  projects,
   type User,
   type UpsertUser,
   type ContentItem,
@@ -14,6 +15,8 @@ import {
   type InsertDownload,
   type FreeSelection,
   type InsertFreeSelection,
+  type Project,
+  type InsertProject,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, count } from "drizzle-orm";
@@ -29,6 +32,7 @@ export interface IStorage {
   getContentItems(userId: string): Promise<ContentItem[]>;
   getContentItem(id: number): Promise<ContentItem | undefined>;
   getContentItemsByUser(userId: string): Promise<ContentItem[]>;
+  getContentItemsByProject(projectId: string): Promise<ContentItem[]>;
   createContentItem(contentItem: InsertContentItem): Promise<ContentItem>;
   deleteContentItem(id: number): Promise<void>;
 
@@ -51,6 +55,13 @@ export interface IStorage {
   createDownload(download: InsertDownload): Promise<Download>;
   getDownloadHistory(userId: string): Promise<(Download & { contentItem: ContentItem })[]>;
   hasDownloadAccess(userId: string, contentItemId: number): Promise<boolean>;
+
+  // Project operations
+  getUserProjects(userId: string): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProjectName(id: string, name: string): Promise<void>;
+  deleteProject(id: string): Promise<void>;
 
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -106,6 +117,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(contentItems)
       .where(eq(contentItems.userId, userId))
+      .orderBy(desc(contentItems.createdAt));
+  }
+
+  async getContentItemsByProject(projectId: string): Promise<ContentItem[]> {
+    return await db
+      .select()
+      .from(contentItems)
+      .where(eq(contentItems.projectId, projectId))
       .orderBy(desc(contentItems.createdAt));
   }
 
@@ -293,6 +312,35 @@ export class DatabaseStorage implements IStorage {
     }
 
     return false;
+  }
+
+  // Project operations
+  async getUserProjects(userId: string): Promise<Project[]> {
+    return await db.select().from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async createProject(projectData: InsertProject): Promise<Project> {
+    const [project] = await db.insert(projects)
+      .values(projectData)
+      .returning();
+    return project;
+  }
+
+  async updateProjectName(id: string, name: string): Promise<void> {
+    await db.update(projects)
+      .set({ name, updatedAt: new Date() })
+      .where(eq(projects.id, id));
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await db.delete(projects).where(eq(projects.id, id));
   }
 
   // Admin operations

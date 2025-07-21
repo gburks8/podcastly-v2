@@ -26,6 +26,15 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Projects table for custom project names and organization
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: varchar("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // User storage table with custom authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull().default(sql`gen_random_uuid()::text`),
@@ -48,6 +57,7 @@ export const users = pgTable("users", {
 export const contentItems = pgTable("content_items", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").references(() => users.id).notNull(),
+  projectId: varchar("project_id").references(() => projects.id, { onDelete: 'cascade' }),
   title: varchar("title").notNull(),
   description: text("description"),
   type: varchar("type").notNull(), // 'video' or 'headshot'
@@ -98,6 +108,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   payments: many(payments),
   downloads: many(downloads),
   freeSelections: many(freeSelections),
+  projects: many(projects),
+}));
+
+export const projectsRelations = relations(projects, ({ one }) => ({
+  user: one(users, {
+    fields: [projects.userId],
+    references: [users.id],
+  }),
 }));
 
 export const contentItemsRelations = relations(contentItems, ({ one, many }) => ({
@@ -149,11 +167,14 @@ export const insertContentItemSchema = createInsertSchema(contentItems).omit({ i
 export const insertPaymentSchema = createInsertSchema(payments);
 export const insertDownloadSchema = createInsertSchema(downloads);
 export const insertFreeSelectionSchema = createInsertSchema(freeSelections);
+export const insertProjectSchema = createInsertSchema(projects).omit({ createdAt: true, updatedAt: true });
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type ContentItem = typeof contentItems.$inferSelect;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertContentItem = typeof contentItems.$inferInsert;
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = typeof payments.$inferInsert;

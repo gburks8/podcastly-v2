@@ -556,6 +556,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Project routes
+  app.get("/api/projects", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const projects = await storage.getUserProjects(userId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { id, name } = req.body;
+      
+      const projectData = {
+        id,
+        userId,
+        name,
+      };
+
+      const project = await storage.createProject(projectData);
+      res.json(project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  app.put("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const { name } = req.body;
+      
+      await storage.updateProjectName(projectId, name);
+      res.json({ message: "Project name updated successfully" });
+    } catch (error) {
+      console.error("Error updating project:", error);
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
+  app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      res.json(project);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      res.status(500).json({ message: "Failed to fetch project" });
+    }
+  });
+
+  app.get("/api/projects/:id/content", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      const contentItems = await storage.getContentItemsByProject(projectId);
+      res.json(contentItems);
+    } catch (error) {
+      console.error("Error fetching project content:", error);
+      res.status(500).json({ message: "Failed to fetch project content" });
+    }
+  });
+
+  // Admin route to get user projects
+  app.get("/api/admin/users/:userId/projects", isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const projects = await storage.getUserProjects(userId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching user projects:", error);
+      res.status(500).json({ message: "Failed to fetch user projects" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
