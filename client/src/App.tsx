@@ -33,6 +33,8 @@ function Router() {
     );
   }
 
+  console.log('🔍 Router Switch render - checking all routes against:', window.location.pathname);
+
   return (
     <Switch>
       {!isAuthenticated ? (
@@ -55,7 +57,12 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Dashboard} />
+          <Route path="/">
+            {() => {
+              console.log('🏠 Dashboard route matched');
+              return <Dashboard />;
+            }}
+          </Route>
           <Route path="/project/:projectId">
             {(params) => {
               console.log('🎯 PROJECT ROUTE MATCHED!', {
@@ -66,10 +73,30 @@ function Router() {
               return <ProjectDetail />;
             }}
           </Route>
-          <Route path="/checkout" component={Checkout} />
-          <Route path="/purchase/:id" component={Purchase} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/admin/user/:userId" component={UserProfile} />
+          <Route path="/checkout">
+            {() => {
+              console.log('💳 Checkout route matched');
+              return <Checkout />;
+            }}
+          </Route>
+          <Route path="/purchase/:id">
+            {(params) => {
+              console.log('🛒 Purchase route matched', params.id);
+              return <Purchase />;
+            }}
+          </Route>
+          <Route path="/admin">
+            {() => {
+              console.log('👑 Admin route matched');
+              return <Admin />;
+            }}
+          </Route>
+          <Route path="/admin/user/:userId">
+            {(params) => {
+              console.log('👤 User profile route matched', params.userId);
+              return <UserProfile />;
+            }}
+          </Route>
           <Route path="*">
             {() => {
               console.log('🚨 CATCH-ALL ROUTE MATCHED - REDIRECTING TO DASHBOARD', {
