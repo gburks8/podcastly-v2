@@ -533,6 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         height: height,
         aspectRatio: aspectRatio ? aspectRatio.toString() : null,
         price: req.body.price || "25.00",
+        projectId: req.body.projectId ? parseInt(req.body.projectId) : null,
       };
 
       const validatedData = insertContentItemSchema.parse(contentData);

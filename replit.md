@@ -33,6 +33,10 @@ Preferred communication style: Simple, everyday language.
 - Implemented project card navigation: Dashboard shows projects → Click project → View deliverables
 - Added project statistics and clean project-based user workflow
 - Streamlined workflow: Admin can now click user → create project → drag/drop files → upload content
+- **Implemented project naming during upload**: Added project name input field in upload dialog
+- **Enhanced upload workflow**: Project is now created first with custom name, then all content is associated
+- **Fixed project persistence**: Project names now persist across page navigation using database storage
+- **Improved user experience**: Admins can name projects at the onset of upload instead of post-upload editing
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads

@@ -50,6 +50,7 @@ export default function UserProfile() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [projectNameInput, setProjectNameInput] = useState("");
+  const [newProjectName, setNewProjectName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   if (!match || !params?.userId) {
@@ -266,10 +267,104 @@ export default function UserProfile() {
   const processUploadQueue = useCallback(async () => {
     const pendingItems = uploadQueue.filter(item => item.status === 'pending');
     
-    for (const item of pendingItems) {
-      await uploadMutation.mutateAsync(item);
+    if (pendingItems.length === 0) return;
+    
+    // First, create a new project with the specified name
+    let projectId: string;
+    try {
+      const projectName = newProjectName.trim() || `Project ${new Date().toLocaleDateString()}`;
+      const projectResponse = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: projectName,
+          userId: user?.id
+        })
+      });
+      
+      if (!projectResponse.ok) {
+        throw new Error('Failed to create project');
+      }
+      
+      const project = await projectResponse.json();
+      projectId = project.id;
+      
+      toast({
+        title: "Project created",
+        description: `Created project "${projectName}" - uploading content...`,
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to create project",
+        description: "Could not create project for uploads",
+        variant: "destructive",
+      });
+      return;
     }
-  }, [uploadQueue, uploadMutation]);
+    
+    // Then upload all content items and associate them with the project
+    for (const item of pendingItems) {
+      try {
+        // Update the upload mutation to include projectId
+        const originalMutationFn = uploadMutation.mutationFn;
+        const formData = new FormData();
+        
+        if (item.type === 'video') {
+          formData.append('video', item.file);
+        } else {
+          formData.append('headshot', item.file);
+        }
+        
+        formData.append('title', item.title);
+        formData.append('description', item.description);
+        formData.append('type', item.type);
+        formData.append('category', item.category);
+        formData.append('price', item.price);
+        formData.append('userId', user?.id || '');
+        formData.append('projectId', projectId);
+        if (item.duration) {
+          formData.append('duration', item.duration);
+        }
+
+        updateQueueItem(item.id, { status: 'uploading', progress: 0 });
+
+        const response = await fetch('/api/admin/content', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+        updateQueueItem(item.id, { status: 'completed', progress: 100 });
+        
+      } catch (error) {
+        updateQueueItem(item.id, { status: 'error', progress: 0 });
+        toast({
+          title: "Upload failed",
+          description: `Failed to upload ${item.title}: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // Clear the form and close dialog after successful upload
+    const completedItems = uploadQueue.filter(item => item.status === 'completed');
+    if (completedItems.length === pendingItems.length) {
+      setUploadQueue([]);
+      setNewProjectName("");
+      setShowCreateProject(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users", params?.userId, "projects"] });
+      toast({
+        title: "Upload complete",
+        description: `All ${pendingItems.length} files uploaded successfully to "${newProjectName.trim() || `Project ${new Date().toLocaleDateString()}`}"`,
+      });
+    }
+  }, [uploadQueue, uploadMutation, newProjectName, user, toast, queryClient, params?.userId, updateQueueItem, setUploadQueue, setNewProjectName, setShowCreateProject]);
 
   // Project name editing
   const handleEditProjectName = useCallback(() => {
@@ -474,6 +569,21 @@ export default function UserProfile() {
                 </DialogHeader>
                 
                 <div className="space-y-6">
+                  {/* Project Name Section */}
+                  <div className="space-y-2">
+                    <Label htmlFor="projectName" className="text-base font-semibold">Project Name</Label>
+                    <Input
+                      id="projectName"
+                      placeholder="Enter project name..."
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      className="text-base"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      This will be the name displayed for this project in the client's gallery.
+                    </p>
+                  </div>
+
                   {/* File Upload Section */}
                   <div className="space-y-4">
                     <Label className="text-base font-semibold">Upload Content</Label>
