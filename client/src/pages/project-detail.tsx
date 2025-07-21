@@ -204,7 +204,17 @@ export default function ProjectDetail() {
       <PackagePurchaseModal
         isOpen={isPackagePurchaseModalOpen}
         onClose={() => setIsPackagePurchaseModalOpen(false)}
-        user={user}
+        onSuccess={() => {
+          setIsPackagePurchaseModalOpen(false);
+          // Refresh queries to get updated user data
+        }}
+        freeSelectionsUsed={freeSelections.length}
+        totalVideos={allContent.filter(item => item.type === 'video').length}
+        totalHeadshots={allContent.filter(item => item.type === 'headshot').length}
+        userPackages={{
+          hasAdditional3Videos: user?.hasAdditional3Videos || false,
+          hasAllRemainingContent: user?.hasAllRemainingContent || false,
+        }}
       />
 
       <FirstDownloadInfoModal
