@@ -15,10 +15,110 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle } from "lucide-react";
-import type { User, ContentItem } from "@shared/schema";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink } from "lucide-react";
+import type { User, ContentItem, Project } from "@shared/schema";
 
-export default function Admin() {
+// Project Management Tab Component
+function ProjectManagementTab() {
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<(Project & { user: User; contentCount: number })[]>({
+    queryKey: ["/api/admin/projects"],
+  });
+
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const { data: projectContent = [], isLoading: projectContentLoading } = useQuery({
+    queryKey: ["/api/projects", selectedProject, "content"],
+    enabled: !!selectedProject,
+  });
+
+  if (projectsLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="w-5 h-5" />
+            Project Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="border rounded-lg p-4 animate-pulse">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded w-1/2 mb-3"></div>
+                <div className="flex gap-2">
+                  <div className="h-6 bg-gray-300 rounded w-16"></div>
+                  <div className="h-6 bg-gray-300 rounded w-20"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FolderOpen className="w-5 h-5" />
+          Project Management ({projects.length} projects)
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.map((project) => (
+            <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">{project.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <Users className="w-4 h-4" />
+                    <span>{project.user.firstName} {project.user.lastName}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Calendar className="w-4 h-4" />
+                    <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(`/project/${project.id}`, '_blank')}
+                  className="shrink-0"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    <Package className="w-3 h-3 mr-1" />
+                    {project.contentCount} items
+                  </Badge>
+                  <Badge variant={project.pricingTier || "outline"} className="text-xs">
+                    {project.pricingTier || "No tier"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {projects.length === 0 && (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>No projects created yet</p>
+              <p className="text-sm">Projects will appear here after content uploads</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -557,64 +657,12 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="content">
-            <Card>
-              <CardHeader>
-                <CardTitle>Content Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {contentLoading ? (
-                  <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg animate-pulse">
-                        <div className="w-16 h-16 bg-gray-300 rounded"></div>
-                        <div className="flex-1">
-                          <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
-                          <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-                        </div>
-                        <div className="w-20 h-8 bg-gray-300 rounded"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {allContent.map((item: ContentItem) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
-                            {item.type === "video" ? (
-                              <Video className="w-8 h-8 text-gray-400" />
-                            ) : (
-                              <Image className="w-8 h-8 text-gray-400" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.title}</p>
-                            <p className="text-sm text-gray-600">{item.description}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Badge variant={item.category === "free" ? "default" : "secondary"}>
-                                {item.category}
-                              </Badge>
-                              <Badge variant="outline">{item.type}</Badge>
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deleteMutation.mutate(item.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ProjectManagementTab />
           </TabsContent>
         </Tabs>
       </main>
     </div>
   );
 }
+
+export default Admin;

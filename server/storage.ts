@@ -70,6 +70,7 @@ export interface IStorage {
   // Admin operations
   getAllUsers(): Promise<User[]>;
   getAllContentItems(): Promise<ContentItem[]>;
+  getAllProjects(): Promise<(Project & { user: User; contentCount: number })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -394,6 +395,26 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContentItems(): Promise<ContentItem[]> {
     return await db.select().from(contentItems).orderBy(desc(contentItems.createdAt));
+  }
+
+  async getAllProjects(): Promise<(Project & { user: User; contentCount: number })[]> {
+    const result = await db
+      .select({
+        project: projects,
+        user: users,
+        contentCount: count(contentItems.id),
+      })
+      .from(projects)
+      .leftJoin(users, eq(projects.userId, users.id))
+      .leftJoin(contentItems, eq(projects.id, contentItems.projectId))
+      .groupBy(projects.id, users.id)
+      .orderBy(desc(projects.createdAt));
+
+    return result.map((row) => ({
+      ...row.project,
+      user: row.user!,
+      contentCount: row.contentCount || 0,
+    }));
   }
 }
 
