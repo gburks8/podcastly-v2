@@ -56,13 +56,28 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Dashboard} />
-          <Route path="/project/:projectId" component={ProjectDetail} />
+          <Route path="/project/:projectId">
+            {(params) => {
+              console.log('🎯 PROJECT ROUTE MATCHED!', {
+                projectId: params.projectId,
+                currentPath: window.location.pathname,
+                url: window.location.href
+              });
+              return <ProjectDetail />;
+            }}
+          </Route>
           <Route path="/checkout" component={Checkout} />
           <Route path="/purchase/:id" component={Purchase} />
           <Route path="/admin" component={Admin} />
           <Route path="/admin/user/:userId" component={UserProfile} />
           <Route path="*">
-            <Redirect to="/" />
+            {() => {
+              console.log('🚨 CATCH-ALL ROUTE MATCHED - REDIRECTING TO DASHBOARD', {
+                currentPath: window.location.pathname,
+                url: window.location.href
+              });
+              return <Redirect to="/" />;
+            }}
           </Route>
         </>
       )}
