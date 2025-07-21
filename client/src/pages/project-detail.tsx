@@ -15,9 +15,17 @@ import { ProjectReassignDialog } from "@/components/ProjectReassignDialog";
 import type { ContentItem, Download as DownloadType, Project, ProjectSelection } from "@shared/schema";
 
 export default function ProjectDetail() {
+  console.log('=== PROJECT DETAIL COMPONENT MOUNTED ===');
+  console.log('Current URL:', window.location.href);
+  console.log('Pathname:', window.location.pathname);
+  
   const { user, isAuthenticated } = useAuth();
+  console.log('Auth status:', { isAuthenticated, user: user?.email });
+  
   const { toast } = useToast();
   const [match, params] = useRoute("/project/:projectId");
+  console.log('Route match:', { match, params });
+  
   const [isProjectPricingModalOpen, setIsProjectPricingModalOpen] = useState(false);
   const [isFirstDownloadInfoModalOpen, setIsFirstDownloadInfoModalOpen] = useState(false);
   const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
@@ -29,9 +37,16 @@ export default function ProjectDetail() {
   }
 
   // Get project details
-  const { data: project, isLoading: projectLoading } = useQuery<Project>({
+  const { data: project, isLoading: projectLoading, error: projectError } = useQuery<Project>({
     queryKey: [`/api/projects/${params.projectId}`],
     enabled: isAuthenticated,
+  });
+  
+  console.log('Project query:', { 
+    project: project?.name, 
+    projectLoading, 
+    projectError: projectError?.message,
+    enabled: isAuthenticated 
   });
 
   // Get project content
@@ -63,10 +78,21 @@ export default function ProjectDetail() {
   }
 
   if (!project) {
+    console.log('=== PROJECT NOT FOUND - SHOWING ERROR PAGE ===');
+    console.log('Project loading:', projectLoading);
+    console.log('Project error:', projectError);
+    console.log('Is authenticated:', isAuthenticated);
+    console.log('Project query enabled:', isAuthenticated);
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Project not found</h2>
+          <p className="text-muted-foreground mb-4">
+            Debug info: Loading={projectLoading ? 'true' : 'false'}, 
+            Auth={isAuthenticated ? 'true' : 'false'}, 
+            Error={projectError?.message || 'none'}
+          </p>
           <Button onClick={() => window.history.back()}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back
