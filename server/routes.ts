@@ -229,7 +229,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
-      await storage.selectFreeContent(userId, contentId);
+      // Get the project ID for this content
+      const contentItem = await storage.getContentItem(contentId);
+      if (!contentItem) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+      
+      // Create project selection
+      await storage.createProjectSelection({
+        userId,
+        projectId: contentItem.projectId!,
+        contentItemId: contentId,
+        selectionType: 'free'
+      });
+      
       res.json({ message: "Content selected as free" });
     } catch (error: any) {
       console.error("Error selecting free content:", error);
@@ -242,14 +255,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const contentId = parseInt(req.params.id);
       
-      const hasAccess = await storage.hasDownloadAccess(userId, contentId);
-      if (!hasAccess) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-
+      // Get the project ID for this content
       const contentItem = await storage.getContentItem(contentId);
       if (!contentItem) {
         return res.status(404).json({ message: "Content not found" });
+      }
+
+      // Check if user has selected this content (either free or through package purchase)
+      const selections = await storage.getProjectSelections(userId, contentItem.projectId!);
+      const hasSelection = selections.some(s => s.contentItemId === contentId);
+      
+      if (!hasSelection) {
+        return res.status(403).json({ message: "Access denied" });
       }
 
       // Record the download

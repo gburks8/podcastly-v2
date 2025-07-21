@@ -37,6 +37,7 @@ export interface IStorage {
   deleteContentItem(id: number): Promise<void>;
 
   // Project-based selection operations
+  createProjectSelection(selection: InsertProjectSelection): Promise<ProjectSelection>;
   selectProjectContent(userId: string, projectId: string, contentItemId: number, selectionType: string): Promise<void>;
   getProjectSelections(userId: string, projectId: string): Promise<ProjectSelection[]>;
   canSelectFreeContent(userId: string, projectId: string): Promise<boolean>;
@@ -137,6 +138,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project-based selection operations
+  async createProjectSelection(selection: InsertProjectSelection): Promise<ProjectSelection> {
+    const [created] = await db
+      .insert(projectSelections)
+      .values(selection)
+      .returning();
+    return created;
+  }
+
   async selectProjectContent(userId: string, projectId: string, contentItemId: number, selectionType: string): Promise<void> {
     await db.insert(projectSelections).values({
       userId,
