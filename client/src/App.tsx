@@ -97,15 +97,7 @@ function Router() {
               return <UserProfile />;
             }}
           </Route>
-          <Route path="*">
-            {() => {
-              console.log('🚨 CATCH-ALL ROUTE MATCHED - REDIRECTING TO DASHBOARD', {
-                currentPath: window.location.pathname,
-                url: window.location.href
-              });
-              return <Redirect to="/" />;
-            }}
-          </Route>
+          {/* TEMPORARILY REMOVED CATCH-ALL TO TEST PROJECT ROUTING */}
         </>
       )}
     </Switch>
