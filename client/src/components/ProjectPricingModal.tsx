@@ -131,7 +131,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
   const headshots = projectContent.filter(item => item.type === 'headshot');
   const freeVideosRemaining = Math.max(0, (project.freeVideoLimit || 3) - freeSelectionsUsed);
 
-  // Check package access
+  // Check package access - with cache busting to ensure fresh data
   const { data: hasAdditional3Access = false } = useQuery({
     queryKey: [`/api/projects/${project.id}/package-access/additional_3_videos`],
     queryFn: async () => {
@@ -139,9 +139,12 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         credentials: "include",
       });
       const data = await response.json();
+      console.log('🔍 Frontend query result - additional_3_videos:', data.hasAccess);
       return data.hasAccess;
     },
     enabled: isOpen,
+    staleTime: 0, // Always refetch
+    cacheTime: 0, // Don't cache
   });
 
   const { data: hasAllContentAccess = false } = useQuery({
@@ -151,9 +154,12 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         credentials: "include",
       });
       const data = await response.json();
+      console.log('🔍 Frontend query result - all_content:', data.hasAccess);
       return data.hasAccess;
     },
     enabled: isOpen,
+    staleTime: 0, // Always refetch
+    cacheTime: 0, // Don't cache
   });
 
   const createPaymentIntentMutation = useMutation({
