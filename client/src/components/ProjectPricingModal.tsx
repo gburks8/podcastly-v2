@@ -108,6 +108,13 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
+  // Reset modal state when modal closes
+  const handleClose = () => {
+    setSelectedPackage(null);
+    setClientSecret(null);
+    onClose();
+  };
+
   const videos = projectContent.filter(item => item.type === 'video');
   const headshots = projectContent.filter(item => item.type === 'headshot');
   const freeVideosRemaining = Math.max(0, (project.freeVideoLimit || 3) - freeSelectionsUsed);
@@ -177,7 +184,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
       parseFloat(project.allContentPrice || '499');
 
     return (
-      <Dialog open={isOpen} onOpenChange={() => { onClose(); setSelectedPackage(null); setClientSecret(null); }}>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Complete Payment</DialogTitle>
@@ -208,7 +215,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
               projectId={project.id}
               amount={amount}
               onSuccess={onSuccess}
-              onClose={onClose}
+              onClose={handleClose}
             />
           </Elements>
         </DialogContent>
@@ -217,7 +224,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl">Choose Your Package - {project.name}</DialogTitle>
