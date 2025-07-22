@@ -66,6 +66,8 @@ Preferred communication style: Simple, everyday language.
 - **Enhanced admin workflow**: Admins can now click user names to access user-specific project creation and management
 - **Fixed package purchase navigation**: Connected "Click to Purchase" buttons in FirstDownloadInfoModal to ProjectPricingModal
 - **Resolved purchase flow issue**: Package options now properly open the package selection interface
+- **Fixed Add Content button**: Added onClick handler to navigate to user profile for content upload
+- **Enhanced admin workflow**: Add Content button now properly redirects to user-specific upload interface
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads

@@ -572,7 +572,14 @@ function ProjectManagementDialog({
               Last updated: {new Date(project.updatedAt).toLocaleDateString()}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  console.log('➕ Add Content clicked for user:', project.user.firstName, project.user.lastName);
+                  window.location.href = `/admin/user/${project.userId}`;
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Content
               </Button>
