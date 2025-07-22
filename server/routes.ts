@@ -545,12 +545,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
-      // Create user with hashed password
+      // Create user with hashed password (exclude id to let database generate it)
       const newUser = await storage.createUser({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.toLowerCase().trim(),
         password: password, // storage.createUser handles password hashing
+        isAdmin: false, // Explicitly set admin status for new users
       });
 
       // Return user without password

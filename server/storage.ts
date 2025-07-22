@@ -87,9 +87,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: UpsertUser): Promise<User> {
+    // Ensure id is not passed to the database (let it auto-generate)
+    const { id, createdAt, updatedAt, ...insertData } = userData;
+    
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values(insertData)
       .returning();
     return user;
   }

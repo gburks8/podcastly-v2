@@ -178,7 +178,17 @@ export const projectSelectionsRelations = relations(projectSelections, ({ one })
 }));
 
 // Schemas
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  stripeCustomerId: true,
+  profileImageUrl: true,
+  freeVideoSelectionsUsed: true,
+  freeHeadshotSelectionsUsed: true,
+  hasAdditional3Videos: true,
+  hasAllRemainingContent: true
+});
 export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true });
 export const insertDownloadSchema = createInsertSchema(downloads);
 export const insertProjectSchema = createInsertSchema(projects).omit({ createdAt: true, updatedAt: true });
