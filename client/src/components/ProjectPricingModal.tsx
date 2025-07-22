@@ -310,6 +310,8 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                     e.preventDefault();
                     e.stopPropagation();
                     console.log('🔥 BUTTON CLICKED - Additional 3 Videos');
+                    console.log('🔥 Button disabled state:', createPaymentIntentMutation.isPending);
+                    console.log('🔥 hasAdditional3Access:', hasAdditional3Access);
                     console.log('🔥 About to call handleSelectPackage with: additional_3_videos');
                     console.log('🔥 Mutation state:', {
                       isPending: createPaymentIntentMutation.isPending,
