@@ -106,7 +106,10 @@ export function FirstDownloadInfoModal({
             <div className="grid md:grid-cols-2 gap-4">
               <div 
                 className="bg-white rounded-lg p-4 border hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
-                onClick={() => onPurchasePackage?.('additional3Videos')}
+                onClick={() => {
+                  console.log('🔥 FirstDownloadInfoModal - Additional 3 Videos package clicked!');
+                  onPurchasePackage?.('additional_3_videos'); // Fixed parameter name
+                }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h5 className="font-semibold text-gray-900 group-hover:text-blue-700">3 Additional Videos</h5>
@@ -132,7 +135,10 @@ export function FirstDownloadInfoModal({
               </div>
               <div 
                 className="bg-white rounded-lg p-4 border hover:border-green-300 hover:shadow-md transition-all cursor-pointer group"
-                onClick={() => onPurchasePackage?.('allRemainingContent')}
+                onClick={() => {
+                  console.log('🔥 FirstDownloadInfoModal - All Content package clicked!');
+                  onPurchasePackage?.('all_remaining_content'); // Fixed parameter name
+                }}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h5 className="font-semibold text-gray-900 group-hover:text-green-700">All Remaining Content</h5>
