@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,6 +138,37 @@ export default function ProjectDetail() {
       canSelectFree,
       isFree: isSelected && projectSelections.find(s => s.contentItemId === contentItem.id)?.selectionType === 'free',
     };
+  };
+
+  const handleActualDownload = async (contentId: number) => {
+    try {
+      const response = await apiRequest('POST', `/api/content/${contentId}/download`);
+      const data = await response.json();
+      
+      // Create a temporary link to trigger download
+      const link = document.createElement('a');
+      link.href = data.downloadUrl;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Started",
+        description: "Your file is downloading now",
+      });
+
+      // Refresh download history to update the UI
+      queryClient.invalidateQueries({ queryKey: ["/api/downloads/history"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: error.message || "Failed to download content",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSuccessfulPurchase = () => {
@@ -315,14 +347,25 @@ export default function ProjectDetail() {
 
       <FirstDownloadInfoModal
         isOpen={isFirstDownloadInfoModalOpen}
-        onClose={() => setIsFirstDownloadInfoModalOpen(false)}
-        onProceed={() => {}}
+        onClose={() => {
+          setIsFirstDownloadInfoModalOpen(false);
+          setPendingDownload(null);
+        }}
+        onProceed={() => {
+          if (pendingDownload) {
+            setIsFirstDownloadInfoModalOpen(false);
+            // Trigger the actual download
+            handleActualDownload(parseInt(pendingDownload.id));
+            setPendingDownload(null);
+          }
+        }}
         onPurchasePackage={(packageType) => {
           console.log('📦 Package purchase clicked:', packageType);
           setIsFirstDownloadInfoModalOpen(false);
           setIsProjectPricingModalOpen(true);
+          setPendingDownload(null);
         }}
-        videoTitle=""
+        videoTitle={pendingDownload?.title || ""}
         remainingFreeVideos={freeVideosRemaining}
       />
 
