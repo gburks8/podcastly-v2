@@ -490,16 +490,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object;
       
-      // Update payment status
-      await storage.updatePaymentStatus(paymentIntent.id, "succeeded");
-
-      // If it's a package purchase, update user's package status
-      if (paymentIntent.metadata?.packageType && paymentIntent.metadata?.userId) {
-        await storage.updateUserPackagePurchase(
-          paymentIntent.metadata.userId,
-          paymentIntent.metadata.packageType
-        );
-      }
+      console.log(`🔔 Webhook: Payment succeeded for ${paymentIntent.id}`);
+      
+      // Update payment status in project_payments table
+      await storage.updateProjectPaymentStatus(paymentIntent.id, "succeeded");
+      
+      console.log(`✅ Webhook: Updated payment status to succeeded for ${paymentIntent.id}`);
+      
+      // The project-based system automatically grants access based on payment status
+      // No additional user-level updates needed since access is checked via hasProjectPackageAccess
     }
 
     res.json({ received: true });
