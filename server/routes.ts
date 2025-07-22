@@ -942,6 +942,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserStripeCustomerId(userId, customerId);
       }
 
+      console.log('🔄 Creating Stripe payment intent with data:', { amount, customerId, userId, projectId, packageType });
+
       // Create the payment intent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -954,15 +956,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
+      console.log('🎯 Stripe payment intent created, ID:', paymentIntent.id);
+
       // Store payment record
-      await storage.createProjectPayment({
+      const paymentData = {
         userId,
         projectId,
         packageType,
         stripePaymentIntentId: paymentIntent.id,
         amount: (amount / 100).toString(), // Convert back to dollars
-        status: "pending",
-      });
+        status: "pending" as const,
+      };
+      
+      console.log('💾 Storing payment record with data:', paymentData);
+      await storage.createProjectPayment(paymentData);
 
       console.log('✅ Payment intent created successfully');
       res.json({ clientSecret: paymentIntent.client_secret });
