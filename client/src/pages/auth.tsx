@@ -35,12 +35,11 @@ export default function Auth() {
   const [activeTab, setActiveTab] = useState("login");
   const [, setLocation] = useLocation();
 
-  // TEMPORARILY DISABLED - Redirect if already authenticated
+  // Redirect if already authenticated
   useEffect(() => {
     if (user && !isLoading) {
-      console.log('🚫 AUTH REDIRECT TEMPORARILY DISABLED FOR DEBUGGING');
-      console.log('User is authenticated but not redirecting');
-      return;
+      console.log('🎯 USER IS AUTHENTICATED - CHECKING REDIRECT');
+      console.log('Current location:', window.location.href);
       
       // Only redirect if we're actually on the auth page
       if (window.location.pathname !== '/auth') {
