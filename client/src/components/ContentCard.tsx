@@ -120,6 +120,13 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   });
 
   const handleSelectFree = () => {
+    // If this is a first download attempt and callback is provided, show the modal first
+    if (onFirstDownloadAttempt) {
+      onFirstDownloadAttempt(content.id.toString(), content.title);
+      return;
+    }
+    
+    // Otherwise, directly select the content
     selectFreeMutation.mutate(content.id);
   };
 
