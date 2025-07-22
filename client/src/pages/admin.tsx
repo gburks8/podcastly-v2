@@ -951,11 +951,11 @@ function ContentGrid({
               </Button>
             </div>
             
-            <div className="flex gap-1 mb-2">
-              <Badge variant="outline" className="text-xs">
+            <div className="flex gap-1 mb-2 flex-wrap">
+              <Badge variant="outline" className="text-xs whitespace-nowrap">
                 {item.category}
               </Badge>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs whitespace-nowrap">
                 {item.type}
               </Badge>
             </div>
