@@ -270,6 +270,19 @@ export default function ProjectDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {videos.map((video) => {
                 const access = getContentAccess(video);
+                
+                // Debug logging for troubleshooting
+                if (video.id === 52 || video.id === 53) {
+                  console.log(`DEBUG Video ${video.id} (${video.title}):`, {
+                    hasAccess: access.hasAccess,
+                    canSelectFree: access.canSelectFree,
+                    showPackageOptionsInstead: !access.hasAccess && !access.canSelectFree,
+                    freeVideosRemaining,
+                    isSelected: projectSelections.some(s => s.contentItemId === video.id),
+                    projectSelections: projectSelections.map(s => ({ id: s.contentItemId, type: s.selectionType }))
+                  });
+                }
+                
                 return (
                   <ContentCard
                     key={video.id}
