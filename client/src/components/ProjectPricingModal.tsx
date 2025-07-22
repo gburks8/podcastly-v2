@@ -183,6 +183,25 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
             <DialogTitle>Complete Payment</DialogTitle>
           </DialogHeader>
           
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Selected Package:</p>
+                <p className="text-lg font-semibold">
+                  {selectedPackage === 'additional_3_videos' ? 'Additional 3 Videos' : 'All Content Access'}
+                </p>
+                <p className="text-lg text-blue-600 font-bold">${amount}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => { setSelectedPackage(null); setClientSecret(null); }}
+              >
+                Change Package
+              </Button>
+            </div>
+          </div>
+          
           <Elements stripe={stripePromise} options={{ clientSecret }}>
             <ProjectCheckoutForm
               packageType={selectedPackage}
@@ -241,8 +260,9 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   onClick={() => handleSelectPackage('additional_3_videos')}
                   disabled={createPaymentIntentMutation.isPending}
                   className="w-full"
+                  variant="outline"
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Buy for ${formatPrice(project.additional3VideosPrice)}`}
+                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Select Package - ${formatPrice(project.additional3VideosPrice)}`}
                 </Button>
               )}
             </CardContent>
@@ -290,7 +310,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   disabled={createPaymentIntentMutation.isPending}
                   className="w-full bg-primary hover:bg-primary/90"
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Buy for ${formatPrice(project.allContentPrice)}`}
+                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Select Package - ${formatPrice(project.allContentPrice)}`}
                 </Button>
               )}
             </CardContent>
@@ -309,6 +329,10 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
               <span>Free downloads remaining: {freeVideosRemaining}</span>
             </div>
           </div>
+        </div>
+
+        <div className="mt-4 text-center text-sm text-gray-600">
+          <p>Select a package above to proceed to payment</p>
         </div>
       </DialogContent>
     </Dialog>
