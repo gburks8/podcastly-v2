@@ -259,7 +259,9 @@ function ProjectManagementDialog({
       }, 500);
 
       const formData = new FormData();
-      formData.append('files', fileData.file);
+      // Use correct field name based on file type
+      const fieldName = fileData.type === 'video' ? 'video' : 'headshot';
+      formData.append(fieldName, fileData.file);
       formData.append('title', fileData.title);
       formData.append('description', fileData.description);
       formData.append('type', fileData.type);
@@ -400,7 +402,9 @@ function ProjectManagementDialog({
   const uploadContentMutation = useMutation({
     mutationFn: async (uploadItem: any) => {
       const formData = new FormData();
-      formData.append("file", uploadItem.file);
+      // Use correct field name based on file type for multer
+      const fieldName = uploadItem.type === 'video' ? 'video' : 'headshot';
+      formData.append(fieldName, uploadItem.file);
       formData.append("title", uploadItem.title);
       formData.append("description", uploadItem.description);
       formData.append("type", uploadItem.type);
