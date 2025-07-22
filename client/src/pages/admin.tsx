@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon } from "lucide-react";
@@ -1068,6 +1069,178 @@ function ProjectReassignDialog({
   );
 }
 
+// Create Project Modal Component
+interface CreateProjectModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  selectedUserId: string;
+  users: User[];
+  onProjectCreated: () => void;
+}
+
+function CreateProjectModal({ isOpen, onClose, selectedUserId, users, onProjectCreated }: CreateProjectModalProps) {
+  const { toast } = useToast();
+  const [projectName, setProjectName] = useState("");
+  const [projectUserId, setProjectUserId] = useState(selectedUserId);
+  const [additional3VideosPrice, setAdditional3VideosPrice] = useState("199.00");
+  const [allContentPrice, setAllContentPrice] = useState("499.00");
+  const [freeVideoLimit, setFreeVideoLimit] = useState("3");
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Update projectUserId when selectedUserId changes
+  useEffect(() => {
+    setProjectUserId(selectedUserId);
+  }, [selectedUserId]);
+
+  const handleCreate = async () => {
+    if (!projectName.trim()) {
+      toast({
+        title: "Project name required",
+        description: "Please enter a name for the project",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!projectUserId) {
+      toast({
+        title: "User selection required", 
+        description: "Please select a user for this project",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: projectName.trim(),
+          userId: projectUserId,
+          additional3VideosPrice: parseFloat(additional3VideosPrice).toFixed(2),
+          allContentPrice: parseFloat(allContentPrice).toFixed(2),
+          freeVideoLimit: parseInt(freeVideoLimit),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create project: ${response.statusText}`);
+      }
+
+      // Reset form
+      setProjectName("");
+      setAdditional3VideosPrice("199.00");
+      setAllContentPrice("499.00");
+      setFreeVideoLimit("3");
+      
+      onProjectCreated();
+    } catch (error: any) {
+      toast({
+        title: "Failed to create project",
+        description: error.message || "An error occurred while creating the project",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New Project</DialogTitle>
+          <DialogDescription>
+            Create a new project for a client to organize their content and manage pricing.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="projectName">Project Name</Label>
+            <Input
+              id="projectName"
+              placeholder="e.g., July 2025 Podcast Session"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="projectUser">Assign to User</Label>
+            <Select value={projectUserId} onValueChange={setProjectUserId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a user" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName} ({user.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="additional3Price">Additional 3 Videos ($)</Label>
+              <Input
+                id="additional3Price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={additional3VideosPrice}
+                onChange={(e) => setAdditional3VideosPrice(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="allContentPrice">All Content ($)</Label>
+              <Input
+                id="allContentPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={allContentPrice}
+                onChange={(e) => setAllContentPrice(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="freeLimit">Free Video Limit</Label>
+            <Input
+              id="freeLimit"
+              type="number"
+              min="0"
+              value={freeVideoLimit}
+              onChange={(e) => setFreeVideoLimit(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreate} 
+            disabled={isCreating || !projectName.trim() || !projectUserId}
+            className="flex-1"
+          >
+            {isCreating ? "Creating..." : "Create Project"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function Admin() {
   const { isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
@@ -1087,6 +1260,7 @@ function Admin() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [defaultPrice, setDefaultPrice] = useState("25.00");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const selectedUserRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1340,6 +1514,34 @@ function Admin() {
                 </CardContent>
               </Card>
 
+              {/* Create Project Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    Create New Project
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4">
+                    <Button 
+                      onClick={() => setShowCreateProjectModal(true)}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={!selectedUserId}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Project
+                    </Button>
+                    <p className="text-sm text-gray-600">
+                      {selectedUserId ? 
+                        'Create a new project and then upload content to it' : 
+                        'Select a user account first to create a project'
+                      }
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Drag and Drop Zone */}
               <Card>
                 <CardContent className="p-0">
@@ -1569,6 +1771,22 @@ function Admin() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal 
+        isOpen={showCreateProjectModal}
+        onClose={() => setShowCreateProjectModal(false)}
+        selectedUserId={selectedUserId}
+        users={users}
+        onProjectCreated={() => {
+          setShowCreateProjectModal(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+          toast({
+            title: "Project Created Successfully",
+            description: "You can now upload content to this project",
+          });
+        }}
+      />
     </div>
   );
 }
