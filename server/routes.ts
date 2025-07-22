@@ -20,7 +20,14 @@ if (process.env.STRIPE_SECRET_KEY) {
 // Function to get video metadata
 async function getVideoMetadata(videoPath: string): Promise<{ width: number; height: number; aspectRatio: number }> {
   return new Promise((resolve, reject) => {
+    // Add timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      reject(new Error('Video metadata extraction timeout'));
+    }, 30000); // 30 second timeout
+    
     ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      clearTimeout(timeout);
+      
       if (err) {
         console.error('Error getting video metadata:', err);
         reject(err);
@@ -51,6 +58,11 @@ async function generateVideoThumbnail(videoPath: string, videoWidth?: number, vi
     // Ensure thumbnails directory exists
     fs.mkdir('uploads/thumbnails', { recursive: true }).catch(() => {});
     
+    // Add timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      reject(new Error('Video thumbnail generation timeout'));
+    }, 45000); // 45 second timeout for thumbnail generation
+    
     // Calculate thumbnail size based on video dimensions
     let thumbnailSize = '320x180'; // Default 16:9 fallback
     if (videoWidth && videoHeight) {
@@ -79,9 +91,11 @@ async function generateVideoThumbnail(videoPath: string, videoWidth?: number, vi
         size: thumbnailSize
       })
       .on('end', () => {
+        clearTimeout(timeout);
         resolve(`/uploads/thumbnails/${thumbnailFilename}`);
       })
       .on('error', (err) => {
+        clearTimeout(timeout);
         console.error('Error generating thumbnail:', err);
         reject(err);
       });
@@ -640,16 +654,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Get video metadata first
           const videoPath = path.join('uploads', subfolder, mainFile.filename);
+          console.log(`Processing video: ${mainFile.filename}, size: ${(mainFile.size / 1024 / 1024).toFixed(2)}MB`);
+          
           const metadata = await getVideoMetadata(videoPath);
           width = metadata.width;
           height = metadata.height;
           aspectRatio = metadata.aspectRatio;
           
+          console.log(`Video metadata extracted: ${width}x${height}, aspect ratio: ${aspectRatio}`);
+          
           // Generate thumbnail from video
           thumbnailUrl = await generateVideoThumbnail(videoPath, width, height);
+          console.log(`Thumbnail generated: ${thumbnailUrl}`);
         } catch (error) {
           console.error('Failed to process video:', error);
           // Continue without thumbnail and metadata if processing fails
+          // Set some default values so the content can still be created
+          console.log('Continuing upload without video processing due to error');
         }
       } else if (req.body.type === 'headshot' && mainFile) {
         try {
