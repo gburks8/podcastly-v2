@@ -1069,6 +1069,160 @@ function ProjectReassignDialog({
   );
 }
 
+// Create User Modal Component
+interface CreateUserModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUserCreated: () => void;
+}
+
+function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProps) {
+  const { toast } = useToast();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreate = async () => {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+      toast({
+        title: "All fields required",
+        description: "Please fill in all fields to create the user",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!email.includes('@')) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim().toLowerCase(),
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to create user: ${response.statusText}`);
+      }
+
+      // Reset form
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPassword("");
+      
+      onUserCreated();
+    } catch (error: any) {
+      toast({
+        title: "Failed to create user",
+        description: error.message || "An error occurred while creating the user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New User</DialogTitle>
+          <DialogDescription>
+            Create a new user account for a client. They will be able to log in with these credentials.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                placeholder="John"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="john.doe@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter password (min 6 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreate} 
+            disabled={isCreating || !firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()}
+            className="flex-1"
+          >
+            {isCreating ? "Creating..." : "Create User"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Create Project Modal Component
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -1261,6 +1415,7 @@ function Admin() {
   const [defaultPrice, setDefaultPrice] = useState("25.00");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const selectedUserRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1710,10 +1865,19 @@ function Admin() {
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Users ({users.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Users ({users.length})
+                  </CardTitle>
+                  <Button 
+                    onClick={() => setShowCreateUserModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {usersLoading ? (
@@ -1784,6 +1948,20 @@ function Admin() {
           toast({
             title: "Project Created Successfully",
             description: "You can now upload content to this project",
+          });
+        }}
+      />
+
+      {/* Create User Modal */}
+      <CreateUserModal 
+        isOpen={showCreateUserModal}
+        onClose={() => setShowCreateUserModal(false)}
+        onUserCreated={() => {
+          setShowCreateUserModal(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+          toast({
+            title: "User Created Successfully",
+            description: "You can now create projects for this user",
           });
         }}
       />

@@ -521,6 +521,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new user (admin only)
+  app.post('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const { firstName, lastName, email, password } = req.body;
+
+      // Validate input
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (!email.includes('@')) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email.toLowerCase());
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Create user with hashed password
+      const newUser = await storage.createUser({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase().trim(),
+        password: password, // storage.createUser handles password hashing
+      });
+
+      // Return user without password
+      const { password: _, ...userResponse } = newUser;
+      res.status(201).json(userResponse);
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user: " + error.message });
+    }
+  });
+
   app.get('/api/admin/projects', isAuthenticated, async (req: any, res) => {
     try {
       const projects = await storage.getAllProjects();
