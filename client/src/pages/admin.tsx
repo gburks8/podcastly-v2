@@ -249,16 +249,6 @@ function ProjectManagementDialog({
         i === index ? { ...item, status: 'uploading', progress: 0 } : item
       ));
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setUploadQueue(prev => prev.map((item, i) => {
-          if (i === index && item.status === 'uploading' && item.progress < 90) {
-            return { ...item, progress: Math.min(item.progress + Math.random() * 15, 90) };
-          }
-          return item;
-        }));
-      }, 500);
-
       const formData = new FormData();
       // Use correct field name based on file type
       const fieldName = fileData.type === 'video' ? 'video' : 'headshot';
@@ -270,13 +260,58 @@ function ProjectManagementDialog({
       formData.append('userId', project.userId);
       formData.append('projectId', project.id);
 
-      const response = await fetch("/api/admin/content", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
+      // Create XMLHttpRequest for proper progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      // Set up upload progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const uploadProgress = Math.round((event.loaded * 70) / event.total); // Upload is 70% of total process
+          setUploadQueue(prev => prev.map((item, i) => 
+            i === index ? { ...item, progress: Math.min(uploadProgress, 70) } : item
+          ));
+        }
       });
 
-      clearInterval(progressInterval);
+      // Handle response
+      const response = await new Promise<Response>((resolve, reject) => {
+        xhr.onload = () => {
+          // After upload completes, show processing phase
+          setUploadQueue(prev => prev.map((item, i) => 
+            i === index ? { ...item, progress: 75 } : item
+          ));
+          
+          if (xhr.status >= 200 && xhr.status < 300) {
+            // Show video processing progress
+            const processingInterval = setInterval(() => {
+              setUploadQueue(prev => prev.map((item, i) => {
+                if (i === index && item.progress < 95) {
+                  return { ...item, progress: Math.min(item.progress + 2, 95) };
+                }
+                return item;
+              }));
+            }, 1000);
+
+            // Clear processing interval when done
+            setTimeout(() => clearInterval(processingInterval), 10000);
+            
+            resolve({
+              ok: xhr.status >= 200 && xhr.status < 300,
+              status: xhr.status,
+              json: async () => JSON.parse(xhr.responseText),
+              text: async () => xhr.responseText,
+            } as Response);
+          } else {
+            reject(new Error(xhr.responseText || 'Upload failed'));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Network error'));
+        
+        xhr.open('POST', '/api/admin/content');
+        xhr.withCredentials = true;
+        xhr.send(formData);
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -1713,6 +1748,17 @@ function Admin() {
                         </Button>
                       </div>
                     </div>
+                    
+                    {/* Overall Progress */}
+                    {uploadQueue.some(item => item.status === 'uploading') && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-gray-600 mb-1">
+                          <span>Overall Progress</span>
+                          <span>{Math.round((uploadQueue.reduce((sum, item) => sum + item.progress, 0) / uploadQueue.length) || 0)}%</span>
+                        </div>
+                        <Progress value={(uploadQueue.reduce((sum, item) => sum + item.progress, 0) / uploadQueue.length) || 0} className="h-2" />
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -1791,10 +1837,19 @@ function Admin() {
                               {item.status === 'uploading' && (
                                 <div>
                                   <div className="flex justify-between text-sm mb-1">
-                                    <span>Uploading...</span>
-                                    <span>{item.progress}%</span>
+                                    <span>
+                                      {item.progress <= 70 ? 'Uploading file...' : 
+                                       item.progress <= 95 ? 'Processing video...' : 
+                                       'Finalizing...'}
+                                    </span>
+                                    <span>{Math.round(item.progress)}%</span>
                                   </div>
                                   <Progress value={item.progress} />
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {item.progress <= 70 ? 'File transfer in progress' : 
+                                     item.progress <= 95 ? 'Generating thumbnail and metadata' : 
+                                     'Saving to database'}
+                                  </div>
                                 </div>
                               )}
                               
