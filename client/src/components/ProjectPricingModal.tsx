@@ -209,7 +209,12 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
             </div>
           </div>
           
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <Elements stripe={stripePromise} options={{ 
+            clientSecret,
+            appearance: {
+              theme: 'stripe'
+            }
+          }}>
             <ProjectCheckoutForm
               packageType={selectedPackage}
               projectId={project.id}
