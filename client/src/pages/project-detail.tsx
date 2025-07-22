@@ -367,12 +367,34 @@ export default function ProjectDetail() {
           setIsFirstDownloadInfoModalOpen(false);
           setPendingDownload(null);
         }}
-        onProceed={() => {
+        onProceed={async () => {
           if (pendingDownload) {
-            setIsFirstDownloadInfoModalOpen(false);
-            // Trigger the actual download
-            handleActualDownload(parseInt(pendingDownload.id));
-            setPendingDownload(null);
+            try {
+              // First, select the video as free
+              const response = await apiRequest('POST', `/api/content/${pendingDownload.id}/select-free`);
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP ${response.status}`);
+              }
+              
+              // Refresh selections to update the UI
+              queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
+              
+              setIsFirstDownloadInfoModalOpen(false);
+              setPendingDownload(null);
+              
+              toast({
+                title: "Video Selected",
+                description: "This video has been added to your free selections. You can now download it.",
+              });
+            } catch (error: any) {
+              console.error('Selection error:', error);
+              toast({
+                title: "Selection Failed",
+                description: error.message || "Failed to select video",
+                variant: "destructive",
+              });
+            }
           }
         }}
         onPurchasePackage={(packageType) => {
