@@ -87,8 +87,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: UpsertUser): Promise<User> {
-    // Ensure id is not passed to the database (let it auto-generate)
-    const { id, createdAt, updatedAt, ...insertData } = userData;
+    // Build insert data explicitly without auto-generated fields
+    const insertData = {
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      password: userData.password || null, // Allow null for password
+      isAdmin: userData.isAdmin || false,
+      needsPasswordSetup: userData.needsPasswordSetup ?? true,
+      profileImageUrl: userData.profileImageUrl || null,
+      stripeCustomerId: userData.stripeCustomerId || null,
+      freeVideoSelectionsUsed: userData.freeVideoSelectionsUsed || 0,
+      freeHeadshotSelectionsUsed: userData.freeHeadshotSelectionsUsed || 0,
+      hasAdditional3Videos: userData.hasAdditional3Videos || false,
+      hasAllRemainingContent: userData.hasAllRemainingContent || false,
+    };
     
     const [user] = await db
       .insert(users)
