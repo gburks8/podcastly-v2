@@ -263,9 +263,9 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" style={{background: 'pink', border: '5px solid red'}}>
         <DialogHeader>
-          <DialogTitle className="text-2xl">Choose Your Package - {project.name}</DialogTitle>
+          <DialogTitle className="text-2xl" style={{background: 'yellow', color: 'red'}}>🚨 TESTING MODAL UPDATE - {project.name} 🚨</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
