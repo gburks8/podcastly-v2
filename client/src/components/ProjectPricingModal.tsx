@@ -307,11 +307,11 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('additional_3_videos');
                   }}
-                  disabled={createPaymentIntentMutation.isPending}
+                  disabled={false}
                   className="w-full"
                   variant="outline"
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Select Package - ${formatPrice(project.additional3VideosPrice)}`}
+                  {createPaymentIntentMutation.isPending ? "Setting up..." : "PURCHASE - Additional 3 Videos"}
                 </Button>
               )}
             </CardContent>
@@ -360,10 +360,10 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('all_content');
                   }}
-                  disabled={createPaymentIntentMutation.isPending}
+                  disabled={false}
                   className="w-full bg-primary hover:bg-primary/90"
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : `Select Package - ${formatPrice(project.allContentPrice)}`}
+                  {createPaymentIntentMutation.isPending ? "Setting up..." : "PURCHASE - All Content Access"}
                 </Button>
               )}
             </CardContent>
