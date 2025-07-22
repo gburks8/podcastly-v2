@@ -172,9 +172,9 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
             setShowVideoPreview(true);
           } : undefined}
         >
-          {content.thumbnailUrl ? (
+          {content.thumbnailUrl || (content.type === "headshot" && content.fileUrl) ? (
             <img 
-              src={content.thumbnailUrl} 
+              src={content.thumbnailUrl || content.fileUrl} 
               alt={content.title} 
               className="max-w-full max-h-full object-contain"
               style={{ display: 'block' }}
