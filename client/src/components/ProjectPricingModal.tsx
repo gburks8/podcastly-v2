@@ -378,24 +378,32 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   Purchased
                 </Button>
               ) : (
-                <div 
-                  onClick={() => {
-                    console.log('🔥 BUTTON CLICKED - All Content');  
-                    console.log('Mutation pending?', createPaymentIntentMutation.isPending);
-                    handleSelectPackage('all_content');
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🔥 BUTTON CLICKED - All Content');
+                    console.log('🔥 Button disabled state:', createPaymentIntentMutation.isPending);
+                    console.log('🔥 hasAllContentAccess:', hasAllContentAccess);
+                    console.log('🔥 About to call handleSelectPackage with: all_content');
+                    console.log('🔥 Mutation state:', {
+                      isPending: createPaymentIntentMutation.isPending,
+                      isError: createPaymentIntentMutation.isError,
+                      error: createPaymentIntentMutation.error
+                    });
+                    try {
+                      handleSelectPackage('all_content');
+                      console.log('🔥 handleSelectPackage called successfully');
+                    } catch (error) {
+                      console.error('🔥 Error calling handleSelectPackage:', error);
+                    }
                   }}
-                  style={{ 
-                    background: 'green', 
-                    color: 'white', 
-                    padding: '12px', 
-                    textAlign: 'center', 
-                    cursor: 'pointer',
-                    border: '2px solid orange',
-                    fontWeight: 'bold'
-                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={createPaymentIntentMutation.isPending}
+                  type="button"
                 >
-                  🚀 CLICK ME - All Content Access - $499 🚀
-                </div>
+                  {createPaymentIntentMutation.isPending ? 'Processing...' : `Buy for ${formatPrice(project.allContentPrice)}`}
+                </button>
               )}
             </CardContent>
           </Card>
