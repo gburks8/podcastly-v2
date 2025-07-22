@@ -182,8 +182,16 @@ export function setupAuth(app: Express) {
 
 // Middleware to check if user is authenticated
 export function isAuthenticated(req: any, res: any, next: any) {
+  console.log('🔐 Auth check:', {
+    isAuthenticated: req.isAuthenticated?.(),
+    user: req.user ? { id: req.user.id, email: req.user.email } : null,
+    sessionID: req.sessionID,
+    url: req.url
+  });
+  
   if (req.isAuthenticated()) {
     return next();
   }
+  console.log('❌ Authentication failed for:', req.url);
   res.status(401).json({ message: "Unauthorized" });
 }

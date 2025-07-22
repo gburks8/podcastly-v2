@@ -910,7 +910,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project payment routes
   app.post("/api/projects/:id/create-payment-intent", isAuthenticated, async (req: any, res) => {
     try {
-      console.log('💳 Payment intent request:', { projectId: req.params.id, userId: req.user.id, body: req.body });
+      console.log('💳 Payment intent request:', { 
+        projectId: req.params.id, 
+        userId: req.user?.id, 
+        userEmail: req.user?.email,
+        sessionId: req.sessionID,
+        body: req.body 
+      });
       
       if (!stripe) {
         console.error('❌ Stripe not configured');
