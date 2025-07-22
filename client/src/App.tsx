@@ -33,68 +33,47 @@ function Router() {
     );
   }
 
-  console.log('🔍 Router Switch render - checking all routes against:', window.location.pathname);
+  const currentPath = window.location.pathname;
+  console.log('🔍 Manual routing - path:', currentPath);
 
-  return (
-    <Switch>
-      {!isAuthenticated ? (
-        <>
-          <Route path="/" component={Landing} />
-          <Route path="/auth" component={Auth} />
-          <Route path="*">
-            {() => {
-              // Redirect to auth with the intended destination as URL parameter
-              const currentPath = window.location.pathname + window.location.search;
-              if (currentPath !== '/' && currentPath !== '/auth') {
-                // Encode the path to safely pass as URL parameter
-                const redirectUrl = `/auth?redirect=${encodeURIComponent(currentPath)}`;
-                window.location.href = redirectUrl;
-                return null;
-              }
-              return <Auth />;
-            }}
-          </Route>
-        </>
-      ) : (
-        <>
-          <Route path="/">
-            {() => {
-              console.log('🏠 Dashboard route matched');
-              return <Dashboard />;
-            }}
-          </Route>
-          <Route path="/project/:projectId" component={ProjectDetail} />
-          <Route path="/checkout">
-            {() => {
-              console.log('💳 Checkout route matched');
-              return <Checkout />;
-            }}
-          </Route>
-          <Route path="/purchase/:id">
-            {(params) => {
-              console.log('🛒 Purchase route matched', params.id);
-              return <Purchase />;
-            }}
-          </Route>
-          <Route path="/admin">
-            {() => {
-              console.log('👑 Admin route matched');
-              return <Admin />;
-            }}
-          </Route>
-          <Route path="/admin/user/:userId">
-            {(params) => {
-              console.log('👤 User profile route matched', params.userId);
-              return <UserProfile />;
-            }}
-          </Route>
-          <Route path="*">
-            <Redirect to="/" />
-          </Route>
-        </>
-      )}
-    </Switch>
-  );
+  // Manual routing to ensure exclusivity
+  if (!isAuthenticated) {
+    if (currentPath === '/') {
+      return <Landing />;
+    } else if (currentPath === '/auth') {
+      return <Auth />;
+    } else {
+      // Redirect to auth with the intended destination
+      const redirectUrl = `/auth?redirect=${encodeURIComponent(currentPath + window.location.search)}`;
+      window.location.href = redirectUrl;
+      return null;
+    }
+  }
+
+  // Authenticated routes - check most specific first
+  if (currentPath.startsWith('/admin/user/')) {
+    console.log('👤 User profile route matched');
+    return <UserProfile />;
+  } else if (currentPath === '/admin') {
+    console.log('👑 Admin route matched');
+    return <Admin />;
+  } else if (currentPath.startsWith('/project/')) {
+    console.log('🎯 PROJECT ROUTE MATCHED!');
+    return <ProjectDetail />;
+  } else if (currentPath === '/checkout') {
+    console.log('💳 Checkout route matched');
+    return <Checkout />;
+  } else if (currentPath.startsWith('/purchase/')) {
+    console.log('🛒 Purchase route matched');
+    return <Purchase />;
+  } else if (currentPath === '/') {
+    console.log('🏠 Dashboard route matched');
+    return <Dashboard />;
+  } else {
+    // Unknown route - redirect to dashboard
+    window.location.href = '/';
+    return null;
+  }
 }
 
 function App() {
