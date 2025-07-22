@@ -185,7 +185,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
 
     return (
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Complete Payment</DialogTitle>
           </DialogHeader>
