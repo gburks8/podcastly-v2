@@ -150,16 +150,26 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         parseFloat(project.additional3VideosPrice || '199') : 
         parseFloat(project.allContentPrice || '499');
       
+      console.log('🚀 Creating payment intent:', { packageType, amount: Math.round(amount * 100), project: project.id });
+      
       const response = await apiRequest("POST", `/api/projects/${project.id}/create-payment-intent`, {
         packageType,
         amount: Math.round(amount * 100), // Convert to cents
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+      
       return response.json();
     },
     onSuccess: (data) => {
+      console.log('✅ Payment intent created successfully:', data);
       setClientSecret(data.clientSecret);
     },
     onError: (error: any) => {
+      console.error('❌ Payment intent creation failed:', error);
       toast({
         title: "Payment Setup Failed",
         description: error.message || "Failed to set up payment",
