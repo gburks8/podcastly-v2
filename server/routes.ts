@@ -521,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subfolder = 'headshots/';
       }
 
-      // Generate thumbnail and extract metadata for video files
+      // Generate thumbnail and extract metadata for video files and images
       let thumbnailUrl = null;
       let width = null;
       let height = null;
@@ -543,6 +543,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error('Failed to process video:', error);
           // Continue without thumbnail and metadata if processing fails
+        }
+      } else if (req.body.type === 'headshot' && mainFile) {
+        try {
+          // Get image dimensions using Sharp
+          const sharp = require('sharp');
+          const imagePath = path.join('uploads', subfolder, mainFile.filename);
+          const metadata = await sharp(imagePath).metadata();
+          width = metadata.width || null;
+          height = metadata.height || null;
+          aspectRatio = width && height ? (width / height).toString() : null;
+        } catch (error) {
+          console.error('Failed to process image:', error);
+          // Continue without dimensions if processing fails
         }
       }
 

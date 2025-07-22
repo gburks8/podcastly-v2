@@ -902,13 +902,17 @@ function ContentGrid({
             className="relative cursor-pointer group"
             onClick={() => handleItemClick(item)}
           >
-            {item.thumbnailUrl ? (
+            {(item.thumbnailUrl || (item.type === "headshot" && item.fileUrl)) ? (
               <div className="flex justify-center bg-gray-50">
                 <img
-                  src={item.thumbnailUrl}
+                  src={item.thumbnailUrl || item.fileUrl}
                   alt={item.title}
                   className="max-w-full h-auto object-contain"
-                  style={{ maxHeight: '200px' }}
+                  style={{ 
+                    maxHeight: '200px',
+                    // Preserve aspect ratio - don't force vertical orientation
+                    aspectRatio: item.width && item.height ? `${item.width}/${item.height}` : 'auto'
+                  }}
                 />
               </div>
             ) : (
