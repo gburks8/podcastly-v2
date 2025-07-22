@@ -629,111 +629,112 @@ function ProjectManagementDialog({
                   isDeleting={deleteContentMutation.isPending}
                 />
               )}
+
+              {/* Upload Interface */}
+              {showUploadInterface && (
+                <div className="mt-8 pt-6 border-t">
+                  <h4 className="font-medium mb-4">Add Content to {project.name}</h4>
+                  
+                  {/* File Drop Zone */}
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer bg-white"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                      
+                      const files = Array.from(e.dataTransfer.files);
+                      console.log('Files dropped:', files.length);
+                      
+                      const processedFiles = files.map(file => ({
+                        id: Math.random().toString(36).substring(2, 15),
+                        file,
+                        name: file.name,
+                        type: file.type.startsWith('video/') ? 'video' : 'headshot',
+                        size: file.size,
+                        title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                        description: "",
+                        category: "premium",
+                      }));
+                      
+                      setUploadQueue(prev => [...prev, ...processedFiles]);
+                    }}
+                  >
+                    <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+                    <p className="text-gray-600 mb-2">Drop files here or click to browse</p>
+                    <p className="text-sm text-gray-500">Supports MP4, MOV, AVI videos and JPG, PNG images</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="video/*,image/*"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        console.log('Files selected:', files.length);
+                        
+                        const processedFiles = files.map(file => ({
+                          id: Math.random().toString(36).substring(2, 15),
+                          file,
+                          name: file.name,
+                          type: file.type.startsWith('video/') ? 'video' : 'headshot',
+                          size: file.size,
+                          title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                          description: "",
+                          category: "premium",
+                        }));
+                        
+                        setUploadQueue(prev => [...prev, ...processedFiles]);
+                      }}
+                      className="hidden"
+                    />
+                  </div>
+                  
+                  {uploadQueue.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="font-medium mb-3">Upload Queue ({uploadQueue.length} files)</h5>
+                      <div className="space-y-2">
+                        {uploadQueue.map((item, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                            <div className="flex items-center gap-3">
+                              <FileVideo className="w-5 h-5 text-gray-400" />
+                              <span className="font-medium">{item.name}</span>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setUploadQueue(queue => queue.filter((_, i) => i !== index));
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <Button onClick={() => uploadAllFiles()}>
+                          Upload All Files
+                        </Button>
+                        <Button variant="outline" onClick={() => setUploadQueue([])}>
+                          Clear Queue
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
 
-        {/* Upload Interface */}
-        {showUploadInterface && (
-          <div className="border-t p-6 bg-gray-50">
-            <h4 className="font-medium mb-4">Add Content to {project.name}</h4>
-            
-            {/* File Drop Zone */}
-            <div 
-              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                
-                const files = Array.from(e.dataTransfer.files);
-                console.log('Files dropped:', files.length);
-                
-                const processedFiles = files.map(file => ({
-                  id: Math.random().toString(36).substring(2, 15),
-                  file,
-                  name: file.name,
-                  type: file.type.startsWith('video/') ? 'video' : 'headshot',
-                  size: file.size,
-                  title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
-                  description: "",
-                  category: "premium",
-                }));
-                
-                setUploadQueue(prev => [...prev, ...processedFiles]);
-              }}
-            >
-              <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
-              <p className="text-gray-600 mb-2">Drop files here or click to browse</p>
-              <p className="text-sm text-gray-500">Supports MP4, MOV, AVI videos and JPG, PNG images</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="video/*,image/*"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  console.log('Files selected:', files.length);
-                  
-                  const processedFiles = files.map(file => ({
-                    id: Math.random().toString(36).substring(2, 15),
-                    file,
-                    name: file.name,
-                    type: file.type.startsWith('video/') ? 'video' : 'headshot',
-                    size: file.size,
-                    title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
-                    description: "",
-                    category: "premium",
-                  }));
-                  
-                  setUploadQueue(prev => [...prev, ...processedFiles]);
-                }}
-                className="hidden"
-              />
-            </div>
-            
-            {uploadQueue.length > 0 && (
-              <div className="mt-4">
-                <h5 className="font-medium mb-3">Upload Queue ({uploadQueue.length} files)</h5>
-                <div className="space-y-2">
-                  {uploadQueue.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
-                      <div className="flex items-center gap-3">
-                        <FileVideo className="w-5 h-5 text-gray-400" />
-                        <span className="font-medium">{item.name}</span>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          setUploadQueue(queue => queue.filter((_, i) => i !== index));
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <Button onClick={() => uploadAllFiles()}>
-                    Upload All Files
-                  </Button>
-                  <Button variant="outline" onClick={() => setUploadQueue([])}>
-                    Clear Queue
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Footer */}
         <div className="border-t p-4 bg-gray-50">
