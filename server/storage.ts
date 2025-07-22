@@ -246,6 +246,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async hasProjectPackageAccess(userId: string, projectId: string, packageType: string): Promise<boolean> {
+    console.log('🔍 Checking package access:', { userId, projectId, packageType });
+    
     const [payment] = await db
       .select()
       .from(projectPayments)
@@ -257,6 +259,9 @@ export class DatabaseStorage implements IStorage {
           eq(projectPayments.status, "succeeded")
         )
       );
+    
+    console.log('🔍 Found payment:', payment);
+    console.log('🔍 Returning access:', !!payment);
     return !!payment;
   }
 
