@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon } from "lucide-react";
 import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
@@ -627,62 +627,71 @@ function ProjectManagementDialog({
           ) : (
             <>
               {selectedTab === "overview" && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Video className="w-5 h-5 text-blue-500" />
-                          <h3 className="font-medium">Videos</h3>
+                <div className="space-y-8">
+                  {/* Content Statistics */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedTab("videos")}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <Video className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <h3 className="font-semibold text-lg">Videos</h3>
                         </div>
-                        <p className="text-2xl font-bold">{videos.length}</p>
+                        <p className="text-3xl font-bold text-blue-600">{videos.length}</p>
+                        <p className="text-sm text-gray-600 mt-2">Click to view all videos</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelectedTab("headshots")}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <Image className="w-6 h-6 text-green-600" />
+                          </div>
+                          <h3 className="font-semibold text-lg">Headshots</h3>
+                        </div>
+                        <p className="text-3xl font-bold text-green-600">{headshots.length}</p>
+                        <p className="text-sm text-gray-600 mt-2">Click to view all headshots</p>
                       </CardContent>
                     </Card>
                     <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Image className="w-5 h-5 text-green-500" />
-                          <h3 className="font-medium">Headshots</h3>
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Package className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <h3 className="font-semibold text-lg">Total Items</h3>
                         </div>
-                        <p className="text-2xl font-bold">{headshots.length}</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="w-5 h-5 text-purple-500" />
-                          <h3 className="font-medium">Total Items</h3>
-                        </div>
-                        <p className="text-2xl font-bold">{project.contentCount}</p>
+                        <p className="text-3xl font-bold text-purple-600">{project.contentCount}</p>
+                        <p className="text-sm text-gray-600 mt-2">Total content delivered</p>
                       </CardContent>
                     </Card>
                   </div>
 
-                  <div>
-                    <h3 className="font-medium mb-3">Recent Uploads</h3>
-                    <div className="space-y-2">
-                      {projectContent.slice(0, 5).map((item) => (
-                        <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                          <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
-                            {item.type === "video" ? (
-                              <Video className="w-4 h-4 text-gray-600" />
-                            ) : (
-                              <Image className="w-4 h-4 text-gray-600" />
-                            )}
+                  {/* Project Information */}
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="font-semibold text-lg mb-4">Project Information</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <UserIcon className="w-5 h-5 text-gray-500" />
+                            <span className="font-medium text-gray-700">Client</span>
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{item.title}</p>
-                            <p className="text-xs text-gray-500">
-                              {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Unknown date'}
-                            </p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {item.type}
-                          </Badge>
+                          <p className="text-lg">{project.user.firstName} {project.user.lastName}</p>
+                          <p className="text-sm text-gray-600">{project.user.email}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-5 h-5 text-gray-500" />
+                            <span className="font-medium text-gray-700">Created</span>
+                          </div>
+                          <p className="text-lg">{new Date(project.createdAt).toLocaleDateString()}</p>
+                          <p className="text-sm text-gray-600">Last updated: {new Date(project.updatedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
