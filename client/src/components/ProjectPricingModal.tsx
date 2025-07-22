@@ -301,18 +301,17 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   Purchased
                 </Button>
               ) : (
-                <Button 
+                <button 
                   onClick={() => {
                     console.log('🔥 Button clicked - Additional 3 Videos');
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('additional_3_videos');
                   }}
-                  disabled={false}
-                  className="w-full"
-                  variant="outline"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded cursor-pointer"
+                  style={{ opacity: 1, pointerEvents: 'auto' }}
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : "PURCHASE - Additional 3 Videos"}
-                </Button>
+                  PURCHASE - Additional 3 Videos - $199
+                </button>
               )}
             </CardContent>
           </Card>
@@ -354,17 +353,17 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   Purchased
                 </Button>
               ) : (
-                <Button 
+                <button 
                   onClick={() => {
                     console.log('🔥 Button clicked - All Content');  
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('all_content');
                   }}
-                  disabled={false}
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded cursor-pointer"
+                  style={{ opacity: 1, pointerEvents: 'auto' }}
                 >
-                  {createPaymentIntentMutation.isPending ? "Setting up..." : "PURCHASE - All Content Access"}
-                </Button>
+                  PURCHASE - All Content Access - $499
+                </button>
               )}
             </CardContent>
           </Card>
