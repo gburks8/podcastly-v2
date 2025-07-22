@@ -317,6 +317,11 @@ export default function ProjectDetail() {
         isOpen={isFirstDownloadInfoModalOpen}
         onClose={() => setIsFirstDownloadInfoModalOpen(false)}
         onProceed={() => {}}
+        onPurchasePackage={(packageType) => {
+          console.log('📦 Package purchase clicked:', packageType);
+          setIsFirstDownloadInfoModalOpen(false);
+          setIsProjectPricingModalOpen(true);
+        }}
         videoTitle=""
         remainingFreeVideos={freeVideosRemaining}
       />
