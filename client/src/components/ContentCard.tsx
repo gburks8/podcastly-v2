@@ -173,7 +173,7 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
     }
   };
 
-  const canDownload = isFree || hasAccess;
+  const canDownload = hasAccess;
   const isLocked = !canDownload;
 
   return (
