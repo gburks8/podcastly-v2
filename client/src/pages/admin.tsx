@@ -233,6 +233,9 @@ function ProjectManagementDialog({
   const [isEditingName, setIsEditingName] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [showUploadInterface, setShowUploadInterface] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: projectContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
     queryKey: ["/api/projects", project.id, "content"],
@@ -300,6 +303,71 @@ function ProjectManagementDialog({
       });
     },
   });
+
+  const uploadContentMutation = useMutation({
+    mutationFn: async (uploadItem: any) => {
+      const formData = new FormData();
+      formData.append("file", uploadItem.file);
+      formData.append("title", uploadItem.title);
+      formData.append("description", uploadItem.description);
+      formData.append("type", uploadItem.type);
+      formData.append("category", uploadItem.category);
+      formData.append("userId", project.userId);
+      formData.append("projectId", project.id);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || `Upload failed: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", project.id, "content"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+    },
+    onError: (error: Error) => {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const uploadAllFiles = async () => {
+    if (uploadQueue.length === 0) return;
+
+    toast({
+      title: "Starting upload",
+      description: `Uploading ${uploadQueue.length} files to ${project.name}`,
+    });
+
+    try {
+      // Upload files sequentially to avoid overwhelming the server
+      for (const uploadItem of uploadQueue) {
+        await uploadContentMutation.mutateAsync(uploadItem);
+      }
+
+      toast({
+        title: "Upload complete",
+        description: `Successfully uploaded ${uploadQueue.length} files`,
+      });
+
+      // Clear upload queue and hide interface
+      setUploadQueue([]);
+      setShowUploadInterface(false);
+    } catch (error) {
+      console.error('Batch upload error:', error);
+    }
+  };
 
   const handleCopyProjectLink = async () => {
     // Create direct project URL - authentication and redirect handled automatically by Router
@@ -565,6 +633,108 @@ function ProjectManagementDialog({
           )}
         </div>
 
+        {/* Upload Interface */}
+        {showUploadInterface && (
+          <div className="border-t p-6 bg-gray-50">
+            <h4 className="font-medium mb-4">Add Content to {project.name}</h4>
+            
+            {/* File Drop Zone */}
+            <div 
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+                
+                const files = Array.from(e.dataTransfer.files);
+                console.log('Files dropped:', files.length);
+                
+                const processedFiles = files.map(file => ({
+                  id: Math.random().toString(36).substring(2, 15),
+                  file,
+                  name: file.name,
+                  type: file.type.startsWith('video/') ? 'video' : 'headshot',
+                  size: file.size,
+                  title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                  description: "",
+                  category: "premium",
+                }));
+                
+                setUploadQueue(prev => [...prev, ...processedFiles]);
+              }}
+            >
+              <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+              <p className="text-gray-600 mb-2">Drop files here or click to browse</p>
+              <p className="text-sm text-gray-500">Supports MP4, MOV, AVI videos and JPG, PNG images</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="video/*,image/*"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  console.log('Files selected:', files.length);
+                  
+                  const processedFiles = files.map(file => ({
+                    id: Math.random().toString(36).substring(2, 15),
+                    file,
+                    name: file.name,
+                    type: file.type.startsWith('video/') ? 'video' : 'headshot',
+                    size: file.size,
+                    title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+                    description: "",
+                    category: "premium",
+                  }));
+                  
+                  setUploadQueue(prev => [...prev, ...processedFiles]);
+                }}
+                className="hidden"
+              />
+            </div>
+            
+            {uploadQueue.length > 0 && (
+              <div className="mt-4">
+                <h5 className="font-medium mb-3">Upload Queue ({uploadQueue.length} files)</h5>
+                <div className="space-y-2">
+                  {uploadQueue.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
+                      <div className="flex items-center gap-3">
+                        <FileVideo className="w-5 h-5 text-gray-400" />
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setUploadQueue(queue => queue.filter((_, i) => i !== index));
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={() => uploadAllFiles()}>
+                    Upload All Files
+                  </Button>
+                  <Button variant="outline" onClick={() => setUploadQueue([])}>
+                    Clear Queue
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Footer */}
         <div className="border-t p-4 bg-gray-50">
           <div className="flex justify-between items-center">
@@ -576,12 +746,12 @@ function ProjectManagementDialog({
                 variant="outline" 
                 size="sm"
                 onClick={() => {
-                  console.log('➕ Add Content clicked for user:', project.user.firstName, project.user.lastName);
-                  window.location.href = `/admin/user/${project.userId}`;
+                  console.log('➕ Add Content clicked for project:', project.name);
+                  setShowUploadInterface(!showUploadInterface);
                 }}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Content
+                {showUploadInterface ? 'Hide Upload' : 'Add Content'}
               </Button>
               <Button variant="outline" size="sm">
                 <Send className="w-4 h-4 mr-2" />
