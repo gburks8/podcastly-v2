@@ -149,6 +149,18 @@ export default function ProjectDetail() {
     const hasPackageAccess = hasAllContentAccess || 
       (hasAdditional3VideosAccess && contentItem.type === 'video');
     
+    // Debug logging to track access changes
+    if (contentItem.id === 'content-1753131071593-hs0p4qxez') { // Log for first video to track changes
+      console.log('🔍 Access check for video:', {
+        contentId: contentItem.id,
+        isSelected,
+        hasAllContentAccess,
+        hasAdditional3VideosAccess,
+        hasPackageAccess,
+        finalHasAccess: isSelected || hasPackageAccess
+      });
+    }
+    
     return {
       hasAccess: isSelected || hasPackageAccess,
       hasBeenDownloaded,
@@ -189,11 +201,24 @@ export default function ProjectDetail() {
   };
 
   const handleSuccessfulPurchase = () => {
+    console.log('🎉 Successful purchase - refreshing all queries');
     setIsProjectPricingModalOpen(false);
-    // Refresh all project data
+    
+    // Force refresh of ALL relevant queries to ensure UI updates
     queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}`] });
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });  
     queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/content`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/all_content`] });
+    queryClient.invalidateQueries({ queryKey: ['/api/user'] }); // Refresh user data
+    queryClient.invalidateQueries({ queryKey: ['/api/downloads/history'] });
+    
+    // Force a refetch immediately 
+    setTimeout(() => {
+      console.log('🔄 Force refetching package access queries');
+      queryClient.refetchQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`] });
+      queryClient.refetchQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/all_content`] });
+    }, 1000);
   };
 
   return (
