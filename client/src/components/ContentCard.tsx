@@ -31,6 +31,10 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
   const selectFreeMutation = useMutation({
     mutationFn: async (contentId: number) => {
       const response = await apiRequest("POST", `/api/content/${contentId}/select-free`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -52,6 +56,17 @@ export function ContentCard({ content, isFree, hasAccess = false, canSelectFree 
         setTimeout(() => {
           window.location.href = "/auth";
         }, 500);
+      } else if (error.message.includes("maximum number of free videos")) {
+        // User has reached free video limit, show package options
+        if (onShowPackageOptions) {
+          onShowPackageOptions();
+        } else {
+          toast({
+            title: "Free Limit Reached",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Selection Failed",

@@ -235,6 +235,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Content not found" });
       }
       
+      // Check if user can still select free content for this project
+      const canSelectFree = await storage.canSelectFreeContent(userId, contentItem.projectId!);
+      if (!canSelectFree) {
+        return res.status(403).json({ 
+          message: "You have already selected the maximum number of free videos for this project. Purchase a package to access more content." 
+        });
+      }
+      
+      // Check if this content is already selected
+      const existingSelections = await storage.getProjectSelections(userId, contentItem.projectId!);
+      const alreadySelected = existingSelections.some(s => s.contentItemId === contentId);
+      if (alreadySelected) {
+        return res.status(400).json({ message: "Content has already been selected" });
+      }
+      
       // Create project selection
       await storage.createProjectSelection({
         userId,
