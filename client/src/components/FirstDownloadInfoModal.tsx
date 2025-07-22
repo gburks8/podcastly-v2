@@ -180,7 +180,17 @@ export function FirstDownloadInfoModal({
             Let Me Choose Different Videos
           </Button>
           <Button
-            onClick={onProceed}
+            onClick={(e) => {
+              console.log('🔥 FirstDownloadInfoModal - Proceed button clicked!', { onProceed });
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                onProceed();
+                console.log('🔥 FirstDownloadInfoModal - onProceed called successfully');
+              } catch (error) {
+                console.error('🔥 FirstDownloadInfoModal - Error calling onProceed:', error);
+              }
+            }}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Download className="w-4 h-4 mr-2" />
