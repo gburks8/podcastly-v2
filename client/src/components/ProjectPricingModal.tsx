@@ -302,13 +302,26 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                 </Button>
               ) : (
                 <button 
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     console.log('🔥 BUTTON CLICKED - Additional 3 Videos');
-                    console.log('Mutation pending?', createPaymentIntentMutation.isPending);
-                    handleSelectPackage('additional_3_videos');
+                    console.log('🔥 About to call handleSelectPackage with: additional_3_videos');
+                    console.log('🔥 Mutation state:', {
+                      isPending: createPaymentIntentMutation.isPending,
+                      isError: createPaymentIntentMutation.isError,
+                      error: createPaymentIntentMutation.error
+                    });
+                    try {
+                      handleSelectPackage('additional_3_videos');
+                      console.log('🔥 handleSelectPackage called successfully');
+                    } catch (error) {
+                      console.error('🔥 Error calling handleSelectPackage:', error);
+                    }
                   }}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                   disabled={createPaymentIntentMutation.isPending}
+                  type="button"
                 >
                   {createPaymentIntentMutation.isPending ? 'Processing...' : `Buy for ${formatPrice(project.additional3VideosPrice)}`}
                 </button>
