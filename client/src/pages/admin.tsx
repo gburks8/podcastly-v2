@@ -302,8 +302,9 @@ function ProjectManagementDialog({
   });
 
   const handleCopyProjectLink = async () => {
-    // Create URL with redirect parameter for proper authentication flow
-    const projectLink = `${window.location.origin}/auth?redirect=${encodeURIComponent(`/project/${project.id}`)}`;
+    // Create direct project URL - authentication and redirect handled automatically by Router
+    const projectLink = `${window.location.origin}/project/${project.id}`;
+    console.log('🔗 Generated project link:', projectLink);
     try {
       await navigator.clipboard.writeText(projectLink);
       toast({

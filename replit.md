@@ -58,6 +58,8 @@ Preferred communication style: Simple, everyday language.
 - **Improved user experience**: Preserved destination URLs during authentication prevents users from losing their intended page
 - **Resolved critical routing conflicts**: Replaced Wouter Switch with manual routing to prevent multiple routes from matching simultaneously
 - **Fixed shareable project links**: Project URLs now work correctly without being overridden by catch-all dashboard redirects
+- **Corrected Copy Link functionality**: Fixed admin "Copy Link" to generate direct project URLs instead of auth redirect URLs
+- **Verified project routing works**: Direct project links successfully load project pages with full content and functionality
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads
