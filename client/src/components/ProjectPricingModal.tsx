@@ -301,17 +301,24 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   Purchased
                 </Button>
               ) : (
-                <button 
+                <div 
                   onClick={() => {
-                    console.log('🔥 Button clicked - Additional 3 Videos');
+                    console.log('🔥 BUTTON CLICKED - Additional 3 Videos');
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('additional_3_videos');
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded cursor-pointer"
-                  style={{ opacity: 1, pointerEvents: 'auto' }}
+                  style={{ 
+                    background: 'red', 
+                    color: 'white', 
+                    padding: '12px', 
+                    textAlign: 'center', 
+                    cursor: 'pointer',
+                    border: '2px solid yellow',
+                    fontWeight: 'bold'
+                  }}
                 >
-                  PURCHASE - Additional 3 Videos - $199
-                </button>
+                  🔥 CLICK ME - Additional 3 Videos - $199 🔥
+                </div>
               )}
             </CardContent>
           </Card>
@@ -353,17 +360,24 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                   Purchased
                 </Button>
               ) : (
-                <button 
+                <div 
                   onClick={() => {
-                    console.log('🔥 Button clicked - All Content');  
+                    console.log('🔥 BUTTON CLICKED - All Content');  
                     console.log('Mutation pending?', createPaymentIntentMutation.isPending);
                     handleSelectPackage('all_content');
                   }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded cursor-pointer"
-                  style={{ opacity: 1, pointerEvents: 'auto' }}
+                  style={{ 
+                    background: 'green', 
+                    color: 'white', 
+                    padding: '12px', 
+                    textAlign: 'center', 
+                    cursor: 'pointer',
+                    border: '2px solid orange',
+                    fontWeight: 'bold'
+                  }}
                 >
-                  PURCHASE - All Content Access - $499
-                </button>
+                  🚀 CLICK ME - All Content Access - $499 🚀
+                </div>
               )}
             </CardContent>
           </Card>
