@@ -107,6 +107,13 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
   const { toast } = useToast();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  
+  console.log('🚀 ProjectPricingModal render:', {
+    isOpen,
+    project: { id: project.id, name: project.name },
+    additional3VideosPrice: project.additional3VideosPrice,
+    allContentPrice: project.allContentPrice,
+  });
 
   // Reset modal state when modal closes
   const handleClose = () => {
@@ -176,6 +183,12 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         variant: "destructive",
       });
     },
+  });
+  
+  console.log('💡 Mutation state:', {
+    isPending: createPaymentIntentMutation.isPending,
+    isError: createPaymentIntentMutation.isError,
+    error: createPaymentIntentMutation.error?.message,
   });
 
   const handleSelectPackage = (packageType: string) => {
@@ -279,7 +292,11 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                 </Button>
               ) : (
                 <Button 
-                  onClick={() => handleSelectPackage('additional_3_videos')}
+                  onClick={() => {
+                    console.log('🔥 Button clicked - Additional 3 Videos');
+                    console.log('Mutation pending?', createPaymentIntentMutation.isPending);
+                    handleSelectPackage('additional_3_videos');
+                  }}
                   disabled={createPaymentIntentMutation.isPending}
                   className="w-full"
                   variant="outline"
@@ -328,7 +345,11 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
                 </Button>
               ) : (
                 <Button 
-                  onClick={() => handleSelectPackage('all_content')}
+                  onClick={() => {
+                    console.log('🔥 Button clicked - All Content');  
+                    console.log('Mutation pending?', createPaymentIntentMutation.isPending);
+                    handleSelectPackage('all_content');
+                  }}
                   disabled={createPaymentIntentMutation.isPending}
                   className="w-full bg-primary hover:bg-primary/90"
                 >
