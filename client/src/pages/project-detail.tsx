@@ -72,6 +72,19 @@ export default function ProjectDetail() {
     enabled: isAuthenticated,
   });
 
+  // Check package access
+  const { data: hasAllContentAccess = false } = useQuery<{ hasAccess: boolean }>({
+    queryKey: [`/api/projects/${params.projectId}/package-access/all_content`],
+    enabled: isAuthenticated,
+    select: (data) => data.hasAccess,
+  });
+
+  const { data: hasAdditional3VideosAccess = false } = useQuery<{ hasAccess: boolean }>({
+    queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`],
+    enabled: isAuthenticated,
+    select: (data) => data.hasAccess,
+  });
+
   if (projectLoading || contentLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -132,8 +145,12 @@ export default function ProjectDetail() {
     const hasBeenDownloaded = downloadHistory.some(d => d.contentItemId === contentItem.id);
     const canSelectFree = freeVideosRemaining > 0 && contentItem.type === 'video' && !isSelected;
     
+    // Check if user has package access that covers this content
+    const hasPackageAccess = hasAllContentAccess || 
+      (hasAdditional3VideosAccess && contentItem.type === 'video');
+    
     return {
-      hasAccess: isSelected,
+      hasAccess: isSelected || hasPackageAccess,
       hasBeenDownloaded,
       canSelectFree,
       isFree: isSelected && projectSelections.find(s => s.contentItemId === contentItem.id)?.selectionType === 'free',
