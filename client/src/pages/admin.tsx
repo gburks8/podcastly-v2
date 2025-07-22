@@ -1081,14 +1081,13 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       toast({
         title: "All fields required",
-        description: "Please fill in all fields to create the user",
+        description: "Please fill in first name, last name, and email address",
         variant: "destructive",
       });
       return;
@@ -1098,15 +1097,6 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
       toast({
         title: "Invalid email",
         description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters long",
         variant: "destructive",
       });
       return;
@@ -1124,7 +1114,6 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim().toLowerCase(),
-          password: password,
         }),
       });
 
@@ -1137,7 +1126,6 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
       setFirstName("");
       setLastName("");
       setEmail("");
-      setPassword("");
       
       onUserCreated();
     } catch (error: any) {
@@ -1157,7 +1145,7 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
         <DialogHeader>
           <DialogTitle>Create New User</DialogTitle>
           <DialogDescription>
-            Create a new user account for a client. They will be able to log in with these credentials.
+            Create a new user account for a client. They will receive an email invitation to set up their password on first login.
           </DialogDescription>
         </DialogHeader>
         
@@ -1194,16 +1182,7 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
             />
           </div>
 
-          <div>
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter password (min 6 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+
         </div>
 
         <div className="flex gap-3 mt-6">

@@ -524,19 +524,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new user (admin only)
   app.post('/api/admin/users', isAuthenticated, async (req: any, res) => {
     try {
-      const { firstName, lastName, email, password } = req.body;
+      const { firstName, lastName, email } = req.body;
 
       // Validate input
-      if (!firstName || !lastName || !email || !password) {
-        return res.status(400).json({ message: "All fields are required" });
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: "First name, last name, and email are required" });
       }
 
       if (!email.includes('@')) {
         return res.status(400).json({ message: "Invalid email format" });
-      }
-
-      if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters long" });
       }
 
       // Check if user already exists
@@ -545,13 +541,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User with this email already exists" });
       }
 
-      // Create user with hashed password (exclude id to let database generate it)
+      // Create user without password (they'll set it on first login)
       const newUser = await storage.createUser({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.toLowerCase().trim(),
-        password: password, // storage.createUser handles password hashing
         isAdmin: false, // Explicitly set admin status for new users
+        needsPasswordSetup: true, // Mark that they need to set up password
       });
 
       // Return user without password

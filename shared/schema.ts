@@ -43,7 +43,7 @@ export const projects = pgTable("projects", {
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull().default(sql`gen_random_uuid()::text`),
   email: varchar("email").unique().notNull(),
-  password: varchar("password").notNull(),
+  password: varchar("password"), // Now nullable for first-time setup
   firstName: varchar("first_name").notNull(),
   lastName: varchar("last_name").notNull(),
   profileImageUrl: varchar("profile_image_url"),
@@ -53,6 +53,7 @@ export const users = pgTable("users", {
   hasAdditional3Videos: boolean("has_additional_3_videos").default(false),
   hasAllRemainingContent: boolean("has_all_remaining_content").default(false),
   isAdmin: boolean("is_admin").default(false),
+  needsPasswordSetup: boolean("needs_password_setup").default(true), // Track if user needs to set password
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -187,7 +188,19 @@ export const insertUserSchema = createInsertSchema(users).omit({
   freeVideoSelectionsUsed: true,
   freeHeadshotSelectionsUsed: true,
   hasAdditional3Videos: true,
-  hasAllRemainingContent: true
+  hasAllRemainingContent: true,
+  needsPasswordSetup: true,
+  password: true // Password will be set during first login
+});
+
+// Schema for password setup during first login
+export const passwordSetupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true });
 export const insertDownloadSchema = createInsertSchema(downloads);
