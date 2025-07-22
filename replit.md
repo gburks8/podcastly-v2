@@ -60,6 +60,8 @@ Preferred communication style: Simple, everyday language.
 - **Fixed shareable project links**: Project URLs now work correctly without being overridden by catch-all dashboard redirects
 - **Corrected Copy Link functionality**: Fixed admin "Copy Link" to generate direct project URLs instead of auth redirect URLs
 - **Verified project routing works**: Direct project links successfully load project pages with full content and functionality
+- **Fixed dashboard navigation issues**: Replaced Wouter setLocation with window.location.href for reliable route changes
+- **Resolved admin panel button**: Admin panel button now properly navigates to admin interface
 
 **July 18, 2025**
 - Added user account selection feature for admin content uploads

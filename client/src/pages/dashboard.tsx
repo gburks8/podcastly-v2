@@ -71,7 +71,7 @@ export default function Dashboard() {
   const totalHeadshots = allContent.filter(item => item.type === 'headshot').length;
 
   const handleProjectClick = (projectId: string) => {
-    setLocation(`/project/${projectId}`);
+    window.location.href = `/project/${projectId}`;
   };
 
   if (isLoading || projectsLoading) {
@@ -108,7 +108,7 @@ export default function Dashboard() {
                   size="sm"
                   onClick={() => {
                     console.log('🔧 Admin Panel button clicked! Navigating to /admin');
-                    setLocation('/admin');
+                    window.location.href = '/admin';
                   }}
                   className="flex items-center gap-2"
                 >
