@@ -73,16 +73,16 @@ export default function ProjectDetail() {
   });
 
   // Check package access
-  const { data: hasAllContentAccess = false } = useQuery<{ hasAccess: boolean }>({
+  const { data: hasAllContentAccess = false } = useQuery({
     queryKey: [`/api/projects/${params.projectId}/package-access/all_content`],
     enabled: isAuthenticated,
-    select: (data) => data.hasAccess,
+    select: (data: { hasAccess: boolean }) => data.hasAccess,
   });
 
-  const { data: hasAdditional3VideosAccess = false } = useQuery<{ hasAccess: boolean }>({
+  const { data: hasAdditional3VideosAccess = false } = useQuery({
     queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`],
     enabled: isAuthenticated,
-    select: (data) => data.hasAccess,
+    select: (data: { hasAccess: boolean }) => data.hasAccess,
   });
 
   if (projectLoading || contentLoading) {

@@ -276,11 +276,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Content not found" });
       }
 
-      // Check if user has selected this content (either free or through package purchase)
+      // Check if user has access through free selection
       const selections = await storage.getProjectSelections(userId, contentItem.projectId!);
       const hasSelection = selections.some(s => s.contentItemId === contentId);
       
-      if (!hasSelection) {
+      // Check if user has package access that covers this content
+      const hasAllContentAccess = await storage.hasProjectPackageAccess(userId, contentItem.projectId!, "all_content");
+      const hasAdditional3VideosAccess = await storage.hasProjectPackageAccess(userId, contentItem.projectId!, "additional_3_videos");
+      const hasPackageAccess = hasAllContentAccess || (hasAdditional3VideosAccess && contentItem.type === 'video');
+      
+      if (!hasSelection && !hasPackageAccess) {
         return res.status(403).json({ message: "Access denied" });
       }
 
