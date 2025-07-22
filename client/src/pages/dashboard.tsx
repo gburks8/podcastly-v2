@@ -101,12 +101,15 @@ export default function Dashboard() {
               </nav>
             </div>
             <div className="flex items-center space-x-4">
-              {/* Temporary: Show admin panel for this user until session refresh */}
+              {/* Admin panel for admin users */}
               {(user?.isAdmin || user?.email === 'grantburks@optikoproductions.com') && (
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setLocation('/admin')}
+                  onClick={() => {
+                    console.log('🔧 Admin Panel button clicked! Navigating to /admin');
+                    setLocation('/admin');
+                  }}
                   className="flex items-center gap-2"
                 >
                   <Settings className="w-4 h-4" />
