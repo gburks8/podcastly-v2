@@ -1191,7 +1191,7 @@ function CreateUserModal({ isOpen, onClose, onUserCreated }: CreateUserModalProp
           </Button>
           <Button 
             onClick={handleCreate} 
-            disabled={isCreating || !firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()}
+            disabled={isCreating || !firstName.trim() || !lastName.trim() || !email.trim()}
             className="flex-1"
           >
             {isCreating ? "Creating..." : "Create User"}
@@ -1531,39 +1531,10 @@ function Admin() {
   };
 
   const uploadAllFiles = async () => {
-    const pendingItems = uploadQueue.filter(item => item.status === 'pending');
-    
-    if (pendingItems.length === 0) {
-      toast({
-        title: "No files to upload",
-        description: "All files have already been processed",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    for (let i = 0; i < uploadQueue.length; i++) {
-      if (uploadQueue[i].status === 'pending') {
-        try {
-          await uploadSingleFile(uploadQueue[i], i);
-        } catch (error: any) {
-          console.log('Batch upload error:', error);
-          toast({
-            title: "Upload failed",
-            description: `Failed to upload ${uploadQueue[i].title}: ${error.message}`,
-            variant: "destructive",
-          });
-        }
-      }
-    }
-    
-    // Invalidate relevant queries to refresh the content
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/content`] });
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
-    
+    // TODO: Implement upload functionality with project-based workflow
     toast({
-      title: "Upload complete",
-      description: "All files have been processed",
+      title: "Feature in development",
+      description: "Upload functionality will be integrated with the new project workflow",
     });
   };
 
