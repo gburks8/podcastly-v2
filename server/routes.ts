@@ -422,6 +422,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Payment verification endpoint - client-side fallback when webhooks aren't configured
+  app.post("/api/projects/:projectId/verify-payment", isAuthenticated, async (req: any, res) => {
+    if (!stripe) {
+      return res.status(500).json({ message: "Payment processing not configured" });
+    }
+
+    try {
+      const { paymentIntentId } = req.body;
+      const userId = req.user.id;
+
+      if (!paymentIntentId) {
+        return res.status(400).json({ message: "Payment intent ID required" });
+      }
+
+      // Retrieve the payment intent from Stripe to verify its status
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status === 'succeeded' && paymentIntent.metadata?.userId === userId) {
+        // Update payment status in our database
+        await storage.updatePaymentStatus(paymentIntentId, "succeeded");
+
+        // Grant package access
+        if (paymentIntent.metadata?.packageType) {
+          await storage.updateUserPackagePurchase(
+            userId,
+            paymentIntent.metadata.packageType
+          );
+          
+          console.log(`✅ Automatically granted ${paymentIntent.metadata.packageType} access to user ${userId}`);
+          
+          res.json({ 
+            success: true, 
+            packageType: paymentIntent.metadata.packageType,
+            message: "Payment verified and access granted"
+          });
+        } else {
+          res.json({ success: true, message: "Payment verified" });
+        }
+      } else {
+        res.status(400).json({ 
+          success: false, 
+          message: "Payment not completed or verification failed" 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ message: "Error verifying payment: " + error.message });
+    }
+  });
+
   app.post("/api/payment-webhook", express.raw({ type: 'application/json' }), async (req, res) => {
     if (!stripe) {
       return res.status(500).json({ message: "Payment processing not configured" });
