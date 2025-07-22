@@ -267,7 +267,7 @@ function ProjectManagementDialog({
       formData.append('userId', project.userId);
       formData.append('projectId', project.id);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("/api/admin/content", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -408,7 +408,7 @@ function ProjectManagementDialog({
       formData.append("userId", project.userId);
       formData.append("projectId", project.id);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch("/api/admin/content", {
         method: "POST",
         body: formData,
         credentials: "include",
