@@ -484,13 +484,13 @@ export default function UserProfile() {
 
           <Tabs defaultValue="videos" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="videos">Videos ({selectedProject.videos.length})</TabsTrigger>
-              <TabsTrigger value="headshots">Headshots ({selectedProject.headshots.length})</TabsTrigger>
+              <TabsTrigger value="videos">Videos ({(selectedProject.videos || []).length})</TabsTrigger>
+              <TabsTrigger value="headshots">Headshots ({(selectedProject.headshots || []).length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="videos">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {selectedProject.videos.map((video) => (
+                {(selectedProject.videos || []).map((video) => (
                   <Card key={video.id} className="overflow-hidden">
                     <div className="bg-gray-100 relative flex items-center justify-center" style={{ minHeight: '200px' }}>
                       {video.thumbnailUrl && (
@@ -522,7 +522,7 @@ export default function UserProfile() {
 
             <TabsContent value="headshots">
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {selectedProject.headshots.map((headshot) => (
+                {(selectedProject.headshots || []).map((headshot) => (
                   <Card key={headshot.id} className="overflow-hidden">
                     <div className="aspect-square bg-gray-100 relative">
                       {headshot.thumbnailUrl && (
@@ -801,23 +801,23 @@ export default function UserProfile() {
                     <div className="flex justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Video className="w-4 h-4" />
-                        <span>{project.videos.length} videos</span>
+                        <span>{project.videos?.length || 0} videos</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Image className="w-4 h-4" />
-                        <span>{project.headshots.length} headshots</span>
+                        <span>{project.headshots?.length || 0} headshots</span>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1 mt-3">
-                      {project.videos.slice(0, 4).map((video, index) => (
+                      {(project.videos || []).slice(0, 4).map((video, index) => (
                         <div key={video.id} className="w-12 h-8 bg-gray-200 rounded text-xs flex items-center justify-center">
                           V{index + 1}
                         </div>
                       ))}
-                      {project.videos.length > 4 && (
+                      {(project.videos || []).length > 4 && (
                         <div className="w-12 h-8 bg-gray-300 rounded text-xs flex items-center justify-center">
-                          +{project.videos.length - 4}
+                          +{(project.videos || []).length - 4}
                         </div>
                       )}
                     </div>
