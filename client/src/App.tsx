@@ -63,16 +63,7 @@ function Router() {
               return <Dashboard />;
             }}
           </Route>
-          <Route path="/project/:projectId">
-            {(params) => {
-              console.log('🎯 PROJECT ROUTE MATCHED!', {
-                projectId: params.projectId,
-                currentPath: window.location.pathname,
-                url: window.location.href
-              });
-              return <ProjectDetail />;
-            }}
-          </Route>
+          <Route path="/project/:projectId" component={ProjectDetail} />
           <Route path="/checkout">
             {() => {
               console.log('💳 Checkout route matched');
@@ -97,7 +88,9 @@ function Router() {
               return <UserProfile />;
             }}
           </Route>
-          {/* TEMPORARILY REMOVED CATCH-ALL TO TEST PROJECT ROUTING */}
+          <Route path="*">
+            <Redirect to="/" />
+          </Route>
         </>
       )}
     </Switch>

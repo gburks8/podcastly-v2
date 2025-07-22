@@ -25,7 +25,7 @@ export default function ProjectDetail() {
   console.log('Pathname:', window.location.pathname);
   
   const { user, isAuthenticated } = useAuth();
-  console.log('Auth status:', { isAuthenticated, user: user?.email });
+  console.log('Auth status:', { isAuthenticated, userId: user?.id, hasUser: !!user });
   
   const { toast } = useToast();
   const [match, params] = useRoute("/project/:projectId");
