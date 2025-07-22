@@ -393,15 +393,21 @@ export default function ProjectDetail() {
           setPendingDownload(null);
         }}
         onProceed={async () => {
+          console.log('🔥 Proceed with Download clicked!', { pendingDownload });
           if (pendingDownload) {
             try {
+              console.log('🔥 Making API request to select free video:', pendingDownload.id);
               // First, select the video as free
               const response = await apiRequest('POST', `/api/content/${pendingDownload.id}/select-free`);
+              console.log('🔥 API Response status:', response.status);
+              
               if (!response.ok) {
                 const errorData = await response.json();
+                console.error('🔥 API Error:', errorData);
                 throw new Error(errorData.message || `HTTP ${response.status}`);
               }
               
+              console.log('🔥 Selection successful, refreshing queries');
               // Refresh selections to update the UI
               queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
               
@@ -412,14 +418,17 @@ export default function ProjectDetail() {
                 title: "Video Selected",
                 description: "This video has been added to your free selections. You can now download it.",
               });
+              console.log('🔥 Process completed successfully');
             } catch (error: any) {
-              console.error('Selection error:', error);
+              console.error('🔥 Selection error:', error);
               toast({
                 title: "Selection Failed",
                 description: error.message || "Failed to select video",
                 variant: "destructive",
               });
             }
+          } else {
+            console.error('🔥 No pending download found!');
           }
         }}
         onPurchasePackage={(packageType) => {
