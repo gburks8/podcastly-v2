@@ -242,6 +242,99 @@ function ProjectManagementDialog({
     enabled: isOpen,
   });
 
+  const uploadSingleFile = async (fileData: typeof uploadQueue[0], index: number) => {
+    try {
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'uploading', progress: 0 } : item
+      ));
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadQueue(prev => prev.map((item, i) => {
+          if (i === index && item.status === 'uploading' && item.progress < 90) {
+            return { ...item, progress: Math.min(item.progress + Math.random() * 15, 90) };
+          }
+          return item;
+        }));
+      }, 500);
+
+      const formData = new FormData();
+      formData.append('files', fileData.file);
+      formData.append('title', fileData.title);
+      formData.append('description', fileData.description);
+      formData.append('type', fileData.type);
+      formData.append('category', fileData.category);
+      formData.append('userId', project.userId);
+      formData.append('projectId', project.id);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Upload error:', errorText);
+        throw new Error(errorText || 'Upload failed');
+      }
+
+      const result = await response.json();
+      console.log('Upload success:', result);
+
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'completed', progress: 100 } : item
+      ));
+
+      return result;
+    } catch (error: any) {
+      console.log('Upload error:', error);
+      setUploadQueue(prev => prev.map((item, i) => 
+        i === index ? { ...item, status: 'error', progress: 0 } : item
+      ));
+      throw error;
+    }
+  };
+
+  const uploadAllFiles = async () => {
+    const pendingItems = uploadQueue.filter(item => item.status === 'pending');
+    
+    if (pendingItems.length === 0) {
+      toast({
+        title: "No files to upload",
+        description: "All files have already been processed",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    for (let i = 0; i < uploadQueue.length; i++) {
+      if (uploadQueue[i].status === 'pending') {
+        try {
+          await uploadSingleFile(uploadQueue[i], i);
+        } catch (error: any) {
+          console.log('Batch upload error:', error);
+          toast({
+            title: "Upload failed",
+            description: `Failed to upload ${uploadQueue[i].title}: ${error.message}`,
+            variant: "destructive",
+          });
+        }
+      }
+    }
+    
+    // Invalidate relevant queries to refresh the content
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/content`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+    
+    toast({
+      title: "Upload complete",
+      description: "All files have been processed",
+    });
+  };
+
   const updateNameMutation = useMutation({
     mutationFn: async (newName: string) => {
       const response = await fetch(`/api/projects/${project.id}/name`, {
@@ -342,32 +435,7 @@ function ProjectManagementDialog({
     },
   });
 
-  const uploadAllFiles = async () => {
-    if (uploadQueue.length === 0) return;
 
-    toast({
-      title: "Starting upload",
-      description: `Uploading ${uploadQueue.length} files to ${project.name}`,
-    });
-
-    try {
-      // Upload files sequentially to avoid overwhelming the server
-      for (const uploadItem of uploadQueue) {
-        await uploadContentMutation.mutateAsync(uploadItem);
-      }
-
-      toast({
-        title: "Upload complete",
-        description: `Successfully uploaded ${uploadQueue.length} files`,
-      });
-
-      // Clear upload queue and hide interface
-      setUploadQueue([]);
-      setShowUploadInterface(false);
-    } catch (error) {
-      console.error('Batch upload error:', error);
-    }
-  };
 
   const handleCopyProjectLink = async () => {
     // Create direct project URL - authentication and redirect handled automatically by Router
@@ -720,8 +788,36 @@ function ProjectManagementDialog({
                         ))}
                       </div>
                       <div className="flex gap-2 mt-4">
-                        <Button onClick={() => uploadAllFiles()}>
-                          Upload All Files
+                        <Button 
+                          onClick={async () => {
+                            if (uploadQueue.length === 0) return;
+
+                            toast({
+                              title: "Starting upload",
+                              description: `Uploading ${uploadQueue.length} files to ${project.name}`,
+                            });
+
+                            try {
+                              // Upload files sequentially using the existing mutation
+                              for (const uploadItem of uploadQueue) {
+                                await uploadContentMutation.mutateAsync(uploadItem);
+                              }
+
+                              toast({
+                                title: "Upload complete",
+                                description: `Successfully uploaded ${uploadQueue.length} files`,
+                              });
+
+                              // Clear upload queue and hide interface
+                              setUploadQueue([]);
+                              setShowUploadInterface(false);
+                            } catch (error) {
+                              console.error('Batch upload error:', error);
+                            }
+                          }}
+                          disabled={uploadContentMutation.isPending || uploadQueue.length === 0}
+                        >
+                          {uploadContentMutation.isPending ? "Uploading..." : "Upload All Files"}
                         </Button>
                         <Button variant="outline" onClick={() => setUploadQueue([])}>
                           Clear Queue
@@ -999,56 +1095,7 @@ function Admin() {
     }
   }, [users]);
 
-  const uploadSingleFile = async (fileData: typeof uploadQueue[0], index: number) => {
-    try {
-      setUploadQueue(prev => prev.map((item, i) => 
-        i === index ? { ...item, status: 'uploading', progress: 0 } : item
-      ));
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setUploadQueue(prev => prev.map((item, i) => {
-          if (i === index && item.status === 'uploading' && item.progress < 90) {
-            return { ...item, progress: Math.min(item.progress + Math.random() * 15, 90) };
-          }
-          return item;
-        }));
-      }, 500);
-
-      const formData = new FormData();
-      formData.append('video', fileData.file);
-      formData.append('title', fileData.title);
-      formData.append('description', fileData.description);
-      formData.append('type', 'video');
-      formData.append('duration', fileData.duration);
-      formData.append('price', fileData.price);
-      formData.append('userId', fileData.userId);
-
-      const response = await fetch("/api/admin/content", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      clearInterval(progressInterval);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
-      }
-
-      setUploadQueue(prev => prev.map((item, i) => 
-        i === index ? { ...item, status: 'completed', progress: 100 } : item
-      ));
-
-      return await response.json();
-    } catch (error: any) {
-      setUploadQueue(prev => prev.map((item, i) => 
-        i === index ? { ...item, status: 'error', progress: 0 } : item
-      ));
-      throw error;
-    }
-  };
 
   const deleteMutation = useMutation({
     mutationFn: async (contentId: number) => {
@@ -1175,6 +1222,7 @@ function Admin() {
         try {
           await uploadSingleFile(uploadQueue[i], i);
         } catch (error: any) {
+          console.log('Batch upload error:', error);
           toast({
             title: "Upload failed",
             description: `Failed to upload ${uploadQueue[i].title}: ${error.message}`,
@@ -1184,7 +1232,10 @@ function Admin() {
       }
     }
     
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/content"] });
+    // Invalidate relevant queries to refresh the content
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${project.id}/content`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+    
     toast({
       title: "Upload complete",
       description: "All files have been processed",
