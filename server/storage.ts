@@ -60,7 +60,7 @@ export interface IStorage {
   hasPurchasedContent(userId: string, contentItemId: number): Promise<boolean>; // For backward compatibility
 
   // Project operations
-  getUserProjects(userId: string): Promise<Project[]>;
+  getUserProjects(userId: string): Promise<(Project & { videos: ContentItem[]; headshots: ContentItem[]; totalItems: number })[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProjectName(id: string, name: string): Promise<void>;
@@ -345,10 +345,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project operations
-  async getUserProjects(userId: string): Promise<Project[]> {
-    return await db.select().from(projects)
+  async getUserProjects(userId: string): Promise<(Project & { videos: ContentItem[]; headshots: ContentItem[]; totalItems: number })[]> {
+    // Get all projects for the user
+    const userProjects = await db.select().from(projects)
       .where(eq(projects.userId, userId))
       .orderBy(desc(projects.createdAt));
+
+    // Get all content for each project
+    const result = await Promise.all(
+      userProjects.map(async (project) => {
+        const content = await db.select()
+          .from(contentItems)
+          .where(eq(contentItems.projectId, project.id))
+          .orderBy(desc(contentItems.createdAt));
+
+        const videos = content.filter(item => item.type === 'video');
+        const headshots = content.filter(item => item.type === 'headshot');
+
+        return {
+          ...project,
+          videos,
+          headshots,
+          totalItems: content.length,
+        };
+      })
+    );
+
+    return result;
   }
 
   async getProject(id: string): Promise<Project | undefined> {

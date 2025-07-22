@@ -77,28 +77,7 @@ export default function UserProfile() {
         credentials: "include",
       });
       if (!projectsResponse.ok) {
-        // If no projects endpoint exists yet, fetch content and group into projects
-        const contentResponse = await fetch(`/api/admin/content?userId=${params.userId}`, {
-          credentials: "include",
-        });
-        if (!contentResponse.ok) throw new Error("Failed to fetch user content");
-        const content: ContentItem[] = await contentResponse.json();
-        
-        // Group content into projects (batches of 12)
-        const projects: Project[] = [];
-        for (let i = 0; i < content.length; i += 12) {
-          const batch = content.slice(i, i + 12);
-          const projectId = `project-${Math.floor(i / 12) + 1}`;
-          projects.push({
-            id: projectId,
-            name: `Project ${Math.floor(i / 12) + 1}`,
-            createdAt: batch[0]?.createdAt?.toString() || new Date().toISOString(),
-            videos: batch.filter(item => item.type === 'video'),
-            headshots: batch.filter(item => item.type === 'headshot'),
-            totalItems: batch.length,
-          });
-        }
-        return projects;
+        throw new Error(`Failed to fetch user projects: ${projectsResponse.status}`);
       }
       return projectsResponse.json();
     },
