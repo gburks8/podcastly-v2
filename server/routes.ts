@@ -910,7 +910,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Project payment routes
   app.post("/api/projects/:id/create-payment-intent", isAuthenticated, async (req: any, res) => {
     try {
+      console.log('💳 Payment intent request:', { projectId: req.params.id, userId: req.user.id, body: req.body });
+      
       if (!stripe) {
+        console.error('❌ Stripe not configured');
         return res.status(500).json({ message: "Payment processing not configured" });
       }
 
@@ -961,10 +964,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending",
       });
 
+      console.log('✅ Payment intent created successfully');
       res.json({ clientSecret: paymentIntent.client_secret });
-    } catch (error) {
-      console.error("Error creating payment intent:", error);
-      res.status(500).json({ message: "Failed to create payment intent" });
+    } catch (error: any) {
+      console.error("❌ Error creating payment intent:", error);
+      res.status(500).json({ message: "Failed to create payment intent: " + error.message });
     }
   });
 
