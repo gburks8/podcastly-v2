@@ -297,10 +297,11 @@ export default function ProjectDetail() {
                     hasBeenDownloaded={access.hasBeenDownloaded}
                     showPackageOptionsInstead={!access.hasAccess && !access.canSelectFree}
                     onShowPackageOptions={() => setIsProjectPricingModalOpen(true)}
-                    onFirstDownloadAttempt={(contentId, title) => {
+                    // Only show FirstDownloadInfoModal for users who can select free content
+                    onFirstDownloadAttempt={access.canSelectFree ? (contentId, title) => {
                       setPendingDownload({ id: contentId, title });
                       setIsFirstDownloadInfoModalOpen(true);
-                    }}
+                    } : undefined}
                   />
                 );
               })}
@@ -331,10 +332,8 @@ export default function ProjectDetail() {
                     isCompact={true}
                     showPackageOptionsInstead={!access.hasAccess}
                     onShowPackageOptions={() => setIsProjectPricingModalOpen(true)}
-                    onFirstDownloadAttempt={(contentId, title) => {
-                      setPendingDownload({ id: contentId, title });
-                      setIsFirstDownloadInfoModalOpen(true);
-                    }}
+                    // Headshots never trigger FirstDownloadInfoModal since they're never free
+                    onFirstDownloadAttempt={undefined}
                   />
                 );
               })}
