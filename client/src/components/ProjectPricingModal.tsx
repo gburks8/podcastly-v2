@@ -269,59 +269,29 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {/* Additional 3 Videos Package */}
-          <Card className={`relative ${hasAdditional3Access ? 'opacity-50' : 'cursor-pointer hover:shadow-lg transition-shadow'}`}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Additional 3 Videos</span>
-                <Badge variant="secondary">
-                  {formatPrice(project.additional3VideosPrice)}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">Access to 3 more videos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className="text-sm">Total: {project.freeVideoLimit || 3} free + 3 additional = 6 videos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm">{videos.length} videos available in this project</span>
-                </div>
-              </div>
-              
-              {hasAdditional3Access ? (
-                <Button disabled className="w-full">
-                  <Check className="w-4 h-4 mr-2" />
-                  Purchased
-                </Button>
-              ) : (
-                <div 
-                  onClick={() => {
-                    console.log('🔥 BUTTON CLICKED - Additional 3 Videos');
-                    console.log('Mutation pending?', createPaymentIntentMutation.isPending);
-                    handleSelectPackage('additional_3_videos');
-                  }}
-                  style={{ 
-                    background: 'red', 
-                    color: 'white', 
-                    padding: '12px', 
-                    textAlign: 'center', 
-                    cursor: 'pointer',
-                    border: '2px solid yellow',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  🔥 CLICK ME - Additional 3 Videos - $199 🔥
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <div style={{background: 'orange', padding: '20px', border: '5px solid blue'}}>
+            <h3 style={{color: 'purple', fontSize: '20px'}}>🔥 PACKAGE 1 🔥</h3>
+            <div 
+              onClick={() => {
+                console.log('🔥 ORANGE BUTTON CLICKED - Additional 3 Videos');
+                handleSelectPackage('additional_3_videos');
+              }}
+              style={{ 
+                background: 'lime', 
+                color: 'black', 
+                padding: '15px', 
+                textAlign: 'center', 
+                cursor: 'pointer',
+                border: '3px solid red',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                margin: '10px 0'
+              }}
+            >
+              🚀 CLICK FOR 3 VIDEOS - $199 🚀
+            </div>
+            <p>Access: {hasAdditional3Access ? 'YES' : 'NO'}</p>
+          </div>
 
           {/* All Content Package */}
           <Card className={`relative ${hasAllContentAccess ? 'opacity-50' : 'cursor-pointer hover:shadow-lg transition-shadow border-2 border-primary'}`}>
