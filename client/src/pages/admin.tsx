@@ -1287,7 +1287,10 @@ function Admin() {
                       <div 
                         key={user.id} 
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => setLocation(`/admin/user/${user.id}`)}
+                        onClick={() => {
+                          console.log('👤 User clicked! Navigating to:', `/admin/user/${user.id}`);
+                          window.location.href = `/admin/user/${user.id}`;
+                        }}
                       >
                         <div className="flex items-center space-x-4">
                           <Avatar className="w-10 h-10">
