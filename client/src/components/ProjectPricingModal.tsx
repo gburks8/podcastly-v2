@@ -119,6 +119,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
   const handleClose = () => {
     setSelectedPackage(null);
     setClientSecret(null);
+    createPaymentIntentMutation.reset(); // Reset mutation state
     onClose();
   };
 
@@ -249,6 +250,15 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
         </DialogContent>
       </Dialog>
     );
+  }
+
+  // Force debug for troubleshooting
+  if (isOpen) {
+    console.error('🚨 DEBUGGING: Modal is open, checking button state');
+    console.error('🚨 isPending:', createPaymentIntentMutation.isPending);
+    console.error('🚨 isError:', createPaymentIntentMutation.isError);
+    console.error('🚨 hasAdditional3Access:', hasAdditional3Access);
+    console.error('🚨 hasAllContentAccess:', hasAllContentAccess);
   }
 
   return (
