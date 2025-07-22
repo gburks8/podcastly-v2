@@ -154,6 +154,21 @@ export default function Dashboard() {
           <p className="text-gray-600">
             Your content is organized into projects. Click on any project to view and download your deliverables.
           </p>
+          
+          {/* TEMPORARY TEST LINK FOR DEBUGGING */}
+          <div className="mt-4 p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <p className="font-bold text-yellow-800 mb-2">DEBUG: Test Project Link</p>
+            <a 
+              href="/project/project-1753131122192-fvaprm6dj" 
+              className="text-blue-600 underline hover:text-blue-800"
+              onClick={(e) => {
+                console.log('🎯 TEST PROJECT LINK CLICKED!');
+                console.log('Target URL:', '/project/project-1753131122192-fvaprm6dj');
+              }}
+            >
+              Direct Project Link (Click to Test)
+            </a>
+          </div>
         </div>
 
         {/* Stats Cards */}
