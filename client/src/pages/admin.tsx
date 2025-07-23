@@ -780,6 +780,8 @@ function ProjectManagementDialog({
                         title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
                         description: "",
                         category: "premium",
+                        status: 'pending' as 'pending' | 'uploading' | 'completed' | 'error',
+                        progress: 0,
                       }));
                       
                       setUploadQueue(prev => [...prev, ...processedFiles]);
@@ -806,6 +808,8 @@ function ProjectManagementDialog({
                           title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
                           description: "",
                           category: "premium",
+                          status: 'pending' as 'pending' | 'uploading' | 'completed' | 'error',
+                          progress: 0,
                         }));
                         
                         setUploadQueue(prev => [...prev, ...processedFiles]);
@@ -816,23 +820,70 @@ function ProjectManagementDialog({
                   
                   {uploadQueue.length > 0 && (
                     <div className="mt-4">
-                      <h5 className="font-medium mb-3">Upload Queue ({uploadQueue.length} files)</h5>
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium">Upload Queue ({uploadQueue.length} files)</h5>
+                        {uploadQueue.some(item => item.status === 'uploading') && (
+                          <span className="text-sm text-gray-600">
+                            {Math.round((uploadQueue.reduce((sum, item) => sum + item.progress, 0) / uploadQueue.length) || 0)}% complete
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Overall Progress Bar */}
+                      {uploadQueue.some(item => item.status === 'uploading') && (
+                        <div className="mb-3">
+                          <Progress 
+                            value={(uploadQueue.reduce((sum, item) => sum + item.progress, 0) / uploadQueue.length) || 0} 
+                            className="h-2" 
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         {uploadQueue.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-white rounded border">
-                            <div className="flex items-center gap-3">
-                              <FileVideo className="w-5 h-5 text-gray-400" />
-                              <span className="font-medium">{item.name}</span>
+                          <div key={index} className="p-3 bg-white rounded border">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                {item.status === 'completed' ? (
+                                  <CheckCircle className="w-5 h-5 text-green-500" />
+                                ) : item.status === 'error' ? (
+                                  <X className="w-5 h-5 text-red-500" />
+                                ) : item.status === 'uploading' ? (
+                                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <FileVideo className="w-5 h-5 text-gray-400" />
+                                )}
+                                <span className="font-medium">{item.name}</span>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setUploadQueue(queue => queue.filter((_, i) => i !== index));
+                                }}
+                                disabled={item.status === 'uploading'}
+                              >
+                                Remove
+                              </Button>
                             </div>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => {
-                                setUploadQueue(queue => queue.filter((_, i) => i !== index));
-                              }}
-                            >
-                              Remove
-                            </Button>
+                            
+                            {item.status === 'uploading' && (
+                              <div>
+                                <div className="flex justify-between text-sm mb-1">
+                                  <span>
+                                    {item.progress <= 70 ? 'Uploading file...' : 
+                                     item.progress <= 95 ? 'Processing video...' : 
+                                     'Finalizing...'}
+                                  </span>
+                                  <span>{Math.round(item.progress)}%</span>
+                                </div>
+                                <Progress value={item.progress} className="h-2" />
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {item.progress <= 70 ? 'File transfer in progress' : 
+                                   item.progress <= 95 ? 'Generating thumbnail and metadata' : 
+                                   'Saving to database'}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -841,15 +892,98 @@ function ProjectManagementDialog({
                           onClick={async () => {
                             if (uploadQueue.length === 0) return;
 
+                            const uploadSingleFile = async (fileItem: typeof uploadQueue[0], index: number) => {
+                              try {
+                                setUploadQueue(prev => prev.map((item, i) => 
+                                  i === index ? { ...item, status: 'uploading', progress: 0 } : item
+                                ));
+
+                                const formData = new FormData();
+                                const fieldName = fileItem.type === 'video' ? 'video' : 'headshot';
+                                formData.append(fieldName, fileItem.file);
+                                formData.append('title', fileItem.title);
+                                formData.append('description', fileItem.description);
+                                formData.append('type', fileItem.type);
+                                formData.append('category', fileItem.category);
+                                formData.append('userId', project.userId);
+                                formData.append('projectId', project.id);
+
+                                const xhr = new XMLHttpRequest();
+                                
+                                xhr.upload.addEventListener('progress', (event) => {
+                                  if (event.lengthComputable) {
+                                    const uploadProgress = Math.round((event.loaded * 70) / event.total);
+                                    setUploadQueue(prev => prev.map((item, i) => 
+                                      i === index ? { ...item, progress: Math.min(uploadProgress, 70) } : item
+                                    ));
+                                  }
+                                });
+
+                                const response = await new Promise<Response>((resolve, reject) => {
+                                  xhr.onload = () => {
+                                    setUploadQueue(prev => prev.map((item, i) => 
+                                      i === index ? { ...item, progress: 75 } : item
+                                    ));
+                                    
+                                    if (xhr.status >= 200 && xhr.status < 300) {
+                                      const processingInterval = setInterval(() => {
+                                        setUploadQueue(prev => prev.map((item, i) => {
+                                          if (i === index && item.progress < 95) {
+                                            return { ...item, progress: Math.min(item.progress + 2, 95) };
+                                          }
+                                          return item;
+                                        }));
+                                      }, 1000);
+
+                                      setTimeout(() => clearInterval(processingInterval), 10000);
+                                      
+                                      resolve({
+                                        ok: xhr.status >= 200 && xhr.status < 300,
+                                        status: xhr.status,
+                                        json: async () => JSON.parse(xhr.responseText),
+                                        text: async () => xhr.responseText,
+                                      } as Response);
+                                    } else {
+                                      reject(new Error(xhr.responseText || 'Upload failed'));
+                                    }
+                                  };
+
+                                  xhr.onerror = () => reject(new Error('Network error'));
+                                  
+                                  xhr.open('POST', '/api/admin/content');
+                                  xhr.withCredentials = true;
+                                  xhr.send(formData);
+                                });
+
+                                if (!response.ok) {
+                                  throw new Error('Upload failed');
+                                }
+
+                                setUploadQueue(prev => prev.map((item, i) => 
+                                  i === index ? { ...item, status: 'completed', progress: 100 } : item
+                                ));
+
+                                return await response.json();
+                              } catch (error: any) {
+                                console.error('Upload error:', error);
+                                setUploadQueue(prev => prev.map((item, i) => 
+                                  i === index ? { ...item, status: 'error', progress: 0 } : item
+                                ));
+                                throw error;
+                              }
+                            };
+
                             toast({
                               title: "Starting upload",
                               description: `Uploading ${uploadQueue.length} files to ${project.name}`,
                             });
 
                             try {
-                              // Upload files sequentially using the existing mutation
-                              for (const uploadItem of uploadQueue) {
-                                await uploadContentMutation.mutateAsync(uploadItem);
+                              // Upload files sequentially
+                              for (let i = 0; i < uploadQueue.length; i++) {
+                                if (uploadQueue[i].status === 'pending') {
+                                  await uploadSingleFile(uploadQueue[i], i);
+                                }
                               }
 
                               toast({
@@ -857,16 +991,23 @@ function ProjectManagementDialog({
                                 description: `Successfully uploaded ${uploadQueue.length} files`,
                               });
 
-                              // Clear upload queue and hide interface
-                              setUploadQueue([]);
-                              setShowUploadInterface(false);
+                              // Clear upload queue and hide interface after a brief delay
+                              setTimeout(() => {
+                                setUploadQueue([]);
+                                setShowUploadInterface(false);
+                              }, 2000);
                             } catch (error) {
                               console.error('Batch upload error:', error);
+                              toast({
+                                title: "Upload failed",
+                                description: "Some files failed to upload. Please try again.",
+                                variant: "destructive",
+                              });
                             }
                           }}
-                          disabled={uploadContentMutation.isPending || uploadQueue.length === 0}
+                          disabled={uploadQueue.length === 0 || uploadQueue.some(item => item.status === 'uploading')}
                         >
-                          {uploadContentMutation.isPending ? "Uploading..." : "Upload All Files"}
+                          {uploadQueue.some(item => item.status === 'uploading') ? "Uploading..." : "Upload All Files"}
                         </Button>
                         <Button variant="outline" onClick={() => setUploadQueue([])}>
                           Clear Queue
