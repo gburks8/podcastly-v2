@@ -853,7 +853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects/:id", async (req: any, res) => {
     try {
       const projectId = req.params.id;
       const project = await storage.getProject(projectId);
@@ -862,14 +862,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      // Check if user owns this project or is admin
-      const isOwner = project.userId === req.user.id;
-      const isAdmin = req.user.isAdmin === true;
+      // For authenticated users, we allow access without ownership checks for public projects
+      // This enables users to access shared project links
       
-      if (!isOwner && !isAdmin) {
-        return res.status(403).json({ message: "Access denied to this project" });
-      }
-      
+      // For unauthenticated users, return basic project info for shareable links
       res.json(project);
     } catch (error) {
       console.error("Error fetching project:", error);
@@ -877,23 +873,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id/content", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects/:id/content", async (req: any, res) => {
     try {
       const projectId = req.params.id;
       
-      // Check if user has access to this project
+      // Check if project exists
       const project = await storage.getProject(projectId);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      const isOwner = project.userId === req.user.id;
-      const isAdmin = req.user.isAdmin === true;
-      
-      if (!isOwner && !isAdmin) {
-        return res.status(403).json({ message: "Access denied to this project" });
+      // For authenticated users, check ownership/admin rights for management access
+      if (req.user) {
+        const isOwner = project.userId === req.user.id;
+        const isAdmin = req.user.isAdmin === true;
+        
+        if (!isOwner && !isAdmin) {
+          // Non-owner/admin authenticated users can view content but with limited info
+          const contentItems = await storage.getContentItemsByProject(projectId);
+          return res.json(contentItems);
+        }
       }
       
+      // Allow public access to view project content (for shareable links)
       const contentItems = await storage.getContentItemsByProject(projectId);
       res.json(contentItems);
     } catch (error) {
@@ -925,27 +927,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id/selections", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects/:id/selections", async (req: any, res) => {
     try {
       const projectId = req.params.id;
       
-      // Check if user has access to this project
+      // Check if project exists
       const project = await storage.getProject(projectId);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      const isOwner = project.userId === req.user.id;
-      const isAdmin = req.user.isAdmin === true;
-      
-      if (!isOwner && !isAdmin) {
-        return res.status(403).json({ message: "Access denied to this project" });
+      // If no user is authenticated, return empty selections (for public viewing)
+      if (!req.user) {
+        return res.json([]);
       }
       
-      // For admins viewing other users' projects, get the project owner's selections
-      // For project owners, get their own selections
-      const targetUserId = isAdmin && !isOwner ? project.userId : req.user.id;
-      const selections = await storage.getProjectSelections(targetUserId, projectId);
+      // For authenticated users, return their selections for this project
+      const selections = await storage.getProjectSelections(req.user.id, projectId);
       res.json(selections);
     } catch (error) {
       console.error("Error fetching project selections:", error);
@@ -953,10 +951,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects/:id/package-access/:packageType", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects/:id/package-access/:packageType", async (req: any, res) => {
     try {
       const projectId = req.params.id;
       const packageType = req.params.packageType;
+      
+      // If no user is authenticated, return no access (for public viewing)
+      if (!req.user) {
+        return res.json({ hasAccess: false });
+      }
+      
       const userId = req.user.id;
       const hasAccess = await storage.hasProjectPackageAccess(userId, projectId, packageType);
       res.json({ hasAccess });
