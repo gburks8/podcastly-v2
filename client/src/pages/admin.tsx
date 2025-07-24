@@ -1090,17 +1090,12 @@ function EmailTemplateModal({
   // Generate the project link
   const projectLink = `${window.location.origin}/project/${project.id}`;
   
-  // Generate professional email template
+  // Generate professional email template with custom text
   const emailTemplate = `Subject: Your ${project.name} Content is Ready - Login Instructions
 
 Hi ${user.firstName},
 
 Great news! Your content from ${project.name} is now ready for preview and download.
-
-🎬 PROJECT DETAILS:
-Project: ${project.name}
-Created: ${new Date(project.createdAt).toLocaleDateString()}
-Content Available: Videos and headshots from your session
 
 🔐 HOW TO ACCESS YOUR CONTENT:
 
@@ -1108,21 +1103,19 @@ Content Available: Videos and headshots from your session
 
 2. Login with your account:
    Email: ${user.email}
-   Password: Use the password you set up, or click "Forgot Password" if you need to reset it
+   Password: Use the password we provided you via text or text us if you have trouble logging in at 740-766-6255.
 
 3. Preview and download your content:
    • You have 3 FREE video downloads to start
    • Additional packages available if you want more content
 
 📞 NEED HELP?
-If you have any trouble accessing your account or content, just reply to this email and we'll get you sorted out quickly.
+If you have any trouble accessing your account or content, just text/call us at 740-766-6255.
 
 Thanks for working with us!
 
 Best regards,
-[Your Name]
-[Your Company]
-[Your Contact Information]
+Optiko Productions
 
 ---
 This is a secure link to your private content. Please don't share this link with others.`;
