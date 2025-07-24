@@ -19,7 +19,7 @@ import {
   type InsertProjectPayment,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (custom auth)
@@ -450,6 +450,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: string): Promise<void> {
+    // Get all content items in this project first to delete related records
+    const projectContentItems = await db
+      .select({ id: contentItems.id })
+      .from(contentItems)
+      .where(eq(contentItems.projectId, id));
+    
+    const contentItemIds = projectContentItems.map(item => item.id);
+    
+    // Delete all related records in the correct order to avoid foreign key constraint violations
+    
+    // 1. Delete downloads that reference content items in this project
+    if (contentItemIds.length > 0) {
+      await db.delete(downloads).where(
+        inArray(downloads.contentItemId, contentItemIds)
+      );
+    }
+    
+    // 2. Delete project selections
+    await db.delete(projectSelections).where(eq(projectSelections.projectId, id));
+    
+    // 3. Delete project payments
+    await db.delete(projectPayments).where(eq(projectPayments.projectId, id));
+    
+    // 4. Delete content items in this project
+    await db.delete(contentItems).where(eq(contentItems.projectId, id));
+    
+    // 5. Finally delete the project itself
     await db.delete(projects).where(eq(projects.id, id));
   }
 
