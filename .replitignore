@@ -1,6 +1,14 @@
 # Deployment optimization - exclude unnecessary files
 
-# Development dependencies and tools
+# CRITICAL: User uploaded files (7.4GB) - DO NOT DEPLOY
+uploads/
+# Exception: Keep only essential server output files if any
+!uploads/essential_output_files/
+
+# Large attached assets that shouldn't be deployed (110MB)
+attached_assets/
+
+# Development dependencies and tools (major size reduction)
 node_modules/@types/
 node_modules/typescript/
 node_modules/tsx/
@@ -9,28 +17,35 @@ node_modules/@vitejs/
 node_modules/@replit/vite-*
 node_modules/drizzle-kit/
 node_modules/esbuild/
+node_modules/react-icons/
+node_modules/date-fns/
+node_modules/lucide-react/
+node_modules/@img/
+
+# Test files and logs
 *.log
 *.test.*
 *.spec.*
 __tests__/
 test/
+coverage/
 
 # Source files (keep only compiled output)
 client/src/
 server/*.ts
 !server/*.js
+!dist/
 
-# Development artifacts
+# Development artifacts and caches
 .vite/
 .cache/
+node_modules/.cache/
 tmp/
 .tmp/
-uploads/temp/
+.DS_Store
+Thumbs.db
 
-# Large attached assets that shouldn't be deployed
-attached_assets/
-
-# Development configuration
+# Development configuration files
 .vscode/
 .idea/
 *.map
@@ -38,14 +53,32 @@ tsconfig.json
 vite.config.ts
 tailwind.config.ts
 postcss.config.js
+.env.local
+.env.development
 
-# Documentation
+# Documentation and deployment scripts
 README*.md
 DEPLOYMENT*.md
+OBJECT_STORAGE*.md
+FINAL-*.md
 docs/
-
-# Build scripts (keep only necessary ones)
 build-*.js
 deploy-*.js
 deploy-*.sh
-verification-*.js
+*-verification.js
+*-optimize.js
+deployment-*.json
+
+# Git and version control
+.git/
+.gitignore
+
+# Package manager files (keep package.json but exclude lock files in production)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Backup files
+*.backup
+*.bak
+*.orig
