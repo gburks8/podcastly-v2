@@ -1,4 +1,4 @@
-# Development Dependencies
+# Development Dependencies - CRITICAL: Exclude from deployment
 node_modules/@vitejs
 node_modules/@replit/vite-plugin-*
 node_modules/vite
@@ -11,6 +11,9 @@ node_modules/@types
 node_modules/autoprefixer
 node_modules/postcss
 node_modules/tailwindcss
+node_modules/@rollup
+node_modules/rollup
+node_modules/@esbuild
 
 # Development Files
 *.map

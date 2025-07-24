@@ -65,7 +65,7 @@ app.use((req, res, next) => {
       const viteModule = await import("./vite.js").catch(async () => {
         // Fallback to shim if vite module is not available
         return await import("./vite-shim.js");
-      });
+      }) as { setupVite: (app: any, server: any) => Promise<void> };
       await viteModule.setupVite(app, server);
       log("Vite development server setup complete");
     } catch (error) {
@@ -82,7 +82,7 @@ app.use((req, res, next) => {
       import("path").then(async (path) => {
         const fs = await import("fs");
         
-        const distPath = path.resolve(import.meta.dirname, "public");
+        const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
         
         if (fs.existsSync(distPath)) {
           app.use(express.static(distPath));

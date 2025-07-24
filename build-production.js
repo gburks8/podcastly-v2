@@ -172,7 +172,12 @@ try {
   console.log('');
   console.log('💡 For deployment:');
   console.log('   - Use npm ci --omit=dev in production');
+  console.log('   - Set REPLIT_DISABLE_PACKAGE_LAYER=true environment variable');
   console.log('   - Server bundle uses dynamic imports for dev features');
+  console.log('   - All Vite dependencies excluded from production bundle');
+  console.log('');
+  console.log('🔧 To start in production:');
+  console.log('   NODE_ENV=production REPLIT_DISABLE_PACKAGE_LAYER=true node dist/index.js');
   console.log('   - Bundle gracefully falls back if dev dependencies missing');
 
 } catch (error) {
