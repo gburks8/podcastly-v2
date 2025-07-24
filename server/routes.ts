@@ -10,6 +10,14 @@ import { insertContentItemSchema } from "@shared/schema";
 import { z } from "zod";
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs/promises";
+import { 
+  uploadFile, 
+  downloadFile, 
+  generateObjectKey, 
+  deleteFile,
+  isObjectStorageReady,
+  type UploadResult 
+} from "./object-storage";
 
 // Only initialize Stripe if secret key is available
 let stripe: Stripe | null = null;
@@ -102,27 +110,9 @@ async function generateVideoThumbnail(videoPath: string, videoWidth?: number, vi
   });
 }
 
-// Configure multer for file uploads
+// Configure multer for file uploads (temporary storage before Object Storage)
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      // Organize uploads by content type
-      if (file.fieldname === 'video') {
-        cb(null, 'uploads/videos/');
-      } else if (file.fieldname === 'headshot' || file.fieldname === 'image') {
-        cb(null, 'uploads/headshots/');
-      } else if (file.fieldname === 'thumbnail') {
-        cb(null, 'uploads/thumbnails/');
-      } else {
-        cb(null, 'uploads/');
-      }
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-      cb(null, `${file.fieldname}-${uniqueSuffix}-${sanitizedName}`);
-    }
-  }),
+  storage: multer.memoryStorage(), // Store in memory for Object Storage upload
   fileFilter: (req, file, cb) => {
     // Allow videos, images, and thumbnails
     if (file.fieldname === 'video') {
@@ -150,8 +140,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   setupAuth(app);
 
-  // Serve uploaded files
+  // Serve uploaded files from Object Storage
+  app.get('/api/files/*', async (req, res) => {
+    try {
+      const objectKey = (req.params as any)[0]; // Get everything after /api/files/
+      
+      if (!objectKey) {
+        return res.status(400).json({ message: 'File path required' });
+      }
+      
+      const fileData = await downloadFile(objectKey);
+      
+      if (!fileData) {
+        return res.status(404).json({ message: 'File not found' });
+      }
+      
+      // Set appropriate content type based on file extension
+      const ext = path.extname(objectKey).toLowerCase();
+      const contentType = {
+        '.mp4': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
+      }[ext] || 'application/octet-stream';
+      
+      res.set({
+        'Content-Type': contentType,
+        'Content-Length': fileData.length,
+        'Cache-Control': 'public, max-age=31536000' // Cache for 1 year
+      });
+      
+      res.send(fileData);
+    } catch (error) {
+      console.error('Error serving file:', error);
+      res.status(500).json({ message: 'Error serving file' });
+    }
+  });
+
+  // Serve legacy uploaded files from local uploads directory
   app.use('/uploads', express.static('uploads'));
+
+  // Object Storage status endpoint
+  app.get('/api/storage/status', isAuthenticated, async (req, res) => {
+    try {
+      const isReady = await isObjectStorageReady();
+      res.json({
+        objectStorageReady: isReady,
+        message: isReady 
+          ? 'Object Storage is configured and ready'
+          : 'Object Storage not configured - using local storage. Create a bucket in the Object Storage tab to enable persistent storage.'
+      });
+    } catch (error) {
+      console.error('Error checking storage status:', error);
+      res.status(500).json({ message: 'Failed to check storage status' });
+    }
+  });
 
   // Auth routes (handled in auth.ts)
   app.get('/api/user', (req, res) => {

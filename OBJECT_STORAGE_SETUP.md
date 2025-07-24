@@ -1,0 +1,1 @@
+This setup resolves your deployment size issue while providing a path to persistent storage for production use.
