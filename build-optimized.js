@@ -43,7 +43,7 @@ try {
   });
 
   console.log('⚙️ Building server bundle...');
-  execSync('esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --minify', { 
+  execSync('esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --minify --external:vite --external:@vitejs/* --external:@replit/vite-plugin-* --define:process.env.NODE_ENV=\\"production\\"', { 
     stdio: 'inherit',
     env: { ...process.env }
   });

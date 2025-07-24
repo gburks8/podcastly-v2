@@ -1,6 +1,17 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+
+// Conditional logging function that doesn't rely on Vite imports
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 const app = express();
 app.use(express.json());
@@ -51,9 +62,50 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, server);
+    try {
+      // Try to setup Vite for development
+      const viteModule = await import("./vite");
+      await viteModule.setupVite(app, server);
+      log("Vite development server setup complete");
+    } catch (error) {
+      log("Vite setup failed, falling back to static serving: " + (error as Error).message);
+      // In case Vite fails, use fallback static serving
+      setupProductionStaticServing(app);
+    }
   } else {
-    serveStatic(app);
+    // Production mode - use static file serving
+    setupProductionStaticServing(app);
+  }
+
+  function setupProductionStaticServing(app: express.Express) {
+    try {
+      const path = require("path");
+      const fs = require("fs");
+      
+      const distPath = path.resolve(import.meta.dirname, "public");
+      
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath));
+        app.use("*", (_req: Request, res: Response) => {
+          res.sendFile(path.resolve(distPath, "index.html"));
+        });
+        log("Production static file serving setup complete");
+      } else {
+        log("Build directory not found, serving error page");
+        app.use("*", (_req: Request, res: Response) => {
+          res.status(500).json({ 
+            error: "Application not properly built. Please run the build process first." 
+          });
+        });
+      }
+    } catch (error) {
+      log("Static file serving setup failed: " + (error as Error).message);
+      app.use("*", (_req: Request, res: Response) => {
+        res.status(500).json({ 
+          error: "Static file serving unavailable" 
+        });
+      });
+    }
   }
 
   // ALWAYS serve the app on port 5000
