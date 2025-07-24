@@ -58,18 +58,18 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Setup appropriate serving mode based on environment
   if (app.get("env") === "development") {
     try {
-      // Try to setup Vite for development
-      const viteModule = await import("./vite");
+      // Try to import the real vite module
+      const viteModule = await import("./vite.js").catch(async () => {
+        // Fallback to shim if vite module is not available
+        return await import("./vite-shim.js");
+      });
       await viteModule.setupVite(app, server);
       log("Vite development server setup complete");
     } catch (error) {
       log("Vite setup failed, falling back to static serving: " + (error as Error).message);
-      // In case Vite fails, use fallback static serving
       setupProductionStaticServing(app);
     }
   } else {
@@ -79,25 +79,33 @@ app.use((req, res, next) => {
 
   function setupProductionStaticServing(app: express.Express) {
     try {
-      const path = require("path");
-      const fs = require("fs");
-      
-      const distPath = path.resolve(import.meta.dirname, "public");
-      
-      if (fs.existsSync(distPath)) {
-        app.use(express.static(distPath));
-        app.use("*", (_req: Request, res: Response) => {
-          res.sendFile(path.resolve(distPath, "index.html"));
-        });
-        log("Production static file serving setup complete");
-      } else {
-        log("Build directory not found, serving error page");
+      import("path").then(async (path) => {
+        const fs = await import("fs");
+        
+        const distPath = path.resolve(import.meta.dirname, "public");
+        
+        if (fs.existsSync(distPath)) {
+          app.use(express.static(distPath));
+          app.use("*", (_req: Request, res: Response) => {
+            res.sendFile(path.resolve(distPath, "index.html"));
+          });
+          log("Production static file serving setup complete");
+        } else {
+          log("Build directory not found, serving error page");
+          app.use("*", (_req: Request, res: Response) => {
+            res.status(500).json({ 
+              error: "Application not properly built. Please run the build process first." 
+            });
+          });
+        }
+      }).catch((error) => {
+        log("Static file serving setup failed: " + error.message);
         app.use("*", (_req: Request, res: Response) => {
           res.status(500).json({ 
-            error: "Application not properly built. Please run the build process first." 
+            error: "Static file serving unavailable" 
           });
         });
-      }
+      });
     } catch (error) {
       log("Static file serving setup failed: " + (error as Error).message);
       app.use("*", (_req: Request, res: Response) => {

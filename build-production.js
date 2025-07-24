@@ -81,6 +81,10 @@ try {
     `--minify ` +
     `--tree-shaking=true ` +
     `--define:process.env.NODE_ENV='"production"' ` +
+    `--external:./vite ` +
+    `--external:./vite.js ` +
+    `--external:../vite.config ` +
+    `--external:../vite.config.ts ` +
     `${externalFlags}`;
     
   console.log('   🔧 Build command:', buildCommand.substring(0, 100) + '...');

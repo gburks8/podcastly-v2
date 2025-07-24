@@ -1,80 +1,62 @@
-# Replit deployment ignore file - exclude unnecessary files from deployment
+# Development Dependencies
+node_modules/@vitejs
+node_modules/@replit/vite-plugin-*
+node_modules/vite
+node_modules/esbuild
+node_modules/drizzle-kit
+node_modules/tsx
+node_modules/typescript
+node_modules/@tailwindcss/vite
+node_modules/@types
+node_modules/autoprefixer
+node_modules/postcss
+node_modules/tailwindcss
 
-# CRITICAL: Major size reducers
-.git/
-uploads/
+# Development Files
+*.map
+.vite
+.cache
+tsconfig.json
+vite.config.ts
+tailwind.config.ts
+drizzle.config.ts
 
-# Development dependencies and caches
-node_modules/.cache/
-.vite/
-.npm/
-.cache/
+# Source Files (keep dist only)
+client/src
+server/*.ts
+!server/index.js
+!dist
 
-# Development files
-*.test.*
-*.spec.*
-__tests__/
-test/
-coverage/
+# Documentation and Development Scripts
+DEPLOYMENT-*.md
+build-*.js
+verify-*.js
+deploy-*.js
+production-*.js
+*.sh
 
-# Log files
+# Assets and Screenshots
+attached_assets
+
+# IDE and Git
+.git
+.gitignore
+.vscode
+.idea
+
+# Logs and Cache
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.npm
+.yarn
 
-# Temporary files
-tmp/
-.tmp/
-temp/
-uploads/temp/
+# Environment
+.env.local
+.env.development
+.env.test
 
-# Development tools
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Source maps (reduce size)
-*.map
-
-# Documentation that's not needed in production
-docs/
-documentation/
-README-dev.md
-DEPLOYMENT.md
-
-# Environment files (handled by Replit secrets)
-.env.*
-!.env.production
-
-# Build scripts and tools (not needed in production)
-deploy-prep.sh
-build-optimized.js
-
-# TypeScript configuration (not needed after compilation)
-tsconfig.json
-tailwind.config.ts
-postcss.config.js
-
-# Development only packages locations
-node_modules/@types/
-node_modules/typescript/
-node_modules/tsx/
-node_modules/drizzle-kit/
-node_modules/@vitejs/
-node_modules/vite/
-node_modules/esbuild/
-node_modules/@replit/
-
-# Keep only essential compiled output
-!dist/
-!node_modules/
-node_modules/@types/
-node_modules/typescript/
-node_modules/tsx/
-node_modules/drizzle-kit/
-node_modules/@vitejs/
-node_modules/vite/
-node_modules/esbuild/
+# OS
+.DS_Store
+Thumbs.db
