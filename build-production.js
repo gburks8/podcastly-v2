@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Production deployment build script
+ * Production deployment build script - DEPLOYMENT FIX
+ * This replaces the package.json build script to exclude Vite
  * Specifically designed to exclude Vite and all development dependencies
  * from the production bundle to solve deployment size issues
  */

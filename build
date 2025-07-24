@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Deployment build script that replaces npm run build
+# This eliminates Vite from the deployment process
+
+echo "🚀 Starting Replit deployment build (Vite-free)..."
+
+# Set production environment
+export NODE_ENV=production
+export REPLIT_DISABLE_PACKAGE_LAYER=true
+
+# Run the production build script
+node build-production.js
+
+echo "✅ Deployment build complete!"

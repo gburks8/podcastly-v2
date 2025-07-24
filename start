@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Production start script for deployment
+# Sets proper environment variables and starts the server
+
+echo "🚀 Starting MediaPro in production mode..."
+
+export NODE_ENV=production
+export REPLIT_DISABLE_PACKAGE_LAYER=true
+
+# Start the production server
+node dist/index.js
