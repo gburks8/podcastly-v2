@@ -1,7 +1,8 @@
 # Replit deployment ignore file - exclude unnecessary files from deployment
 
-# CRITICAL: Git repository (major size reducer)
+# CRITICAL: Major size reducers
 .git/
+uploads/
 
 # Development dependencies and caches
 node_modules/.cache/
