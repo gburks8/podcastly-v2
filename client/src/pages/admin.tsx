@@ -1179,10 +1179,10 @@ This is a secure link to your private content. Please don't share this link with
           </div>
 
           {/* Email Template */}
-          <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm font-mono text-gray-800 leading-relaxed">
+          <div className="border rounded-lg p-6 bg-white max-h-96 overflow-y-auto shadow-sm">
+            <div className="whitespace-pre-wrap text-sm font-sans text-gray-900 leading-relaxed" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
               {emailTemplate}
-            </pre>
+            </div>
           </div>
 
           {/* Action Buttons */}
