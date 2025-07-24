@@ -50,6 +50,11 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Health check endpoint for deployment
+  app.get("/health", (_req: Request, res: Response) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -85,32 +90,45 @@ app.use((req, res, next) => {
         const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
         
         if (fs.existsSync(distPath)) {
+          // Serve static files from dist/public
           app.use(express.static(distPath));
-          app.use("*", (_req: Request, res: Response) => {
-            res.sendFile(path.resolve(distPath, "index.html"));
+          
+          // Handle React routing - serve index.html for all non-API routes
+          app.get("*", (_req: Request, res: Response) => {
+            const indexPath = path.resolve(distPath, "index.html");
+            if (fs.existsSync(indexPath)) {
+              res.sendFile(indexPath);
+            } else {
+              res.status(404).json({ 
+                error: "Frontend assets not found. Please ensure the build process completed successfully." 
+              });
+            }
           });
-          log("Production static file serving setup complete");
+          log(`Production static file serving setup complete from: ${distPath}`);
         } else {
-          log("Build directory not found, serving error page");
-          app.use("*", (_req: Request, res: Response) => {
+          log(`Build directory not found at: ${distPath}`);
+          app.get("*", (_req: Request, res: Response) => {
             res.status(500).json({ 
-              error: "Application not properly built. Please run the build process first." 
+              error: "Application not properly built. dist/public directory not found.",
+              expectedPath: distPath
             });
           });
         }
       }).catch((error) => {
         log("Static file serving setup failed: " + error.message);
-        app.use("*", (_req: Request, res: Response) => {
+        app.get("*", (_req: Request, res: Response) => {
           res.status(500).json({ 
-            error: "Static file serving unavailable" 
+            error: "Static file serving unavailable",
+            details: error.message
           });
         });
       });
     } catch (error) {
       log("Static file serving setup failed: " + (error as Error).message);
-      app.use("*", (_req: Request, res: Response) => {
+      app.get("*", (_req: Request, res: Response) => {
         res.status(500).json({ 
-          error: "Static file serving unavailable" 
+          error: "Static file serving unavailable",
+          details: (error as Error).message
         });
       });
     }
