@@ -27,6 +27,8 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   updateUserStripeCustomerId(userId: string, customerId: string): Promise<void>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
+  setupUserPassword(userId: string, hashedPassword: string): Promise<void>;
 
   // Content operations
   getContentItems(userId: string): Promise<ContentItem[]>;
@@ -114,6 +116,28 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({ stripeCustomerId: customerId, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        password: hashedPassword, 
+        needsPasswordSetup: false,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async setupUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        password: hashedPassword, 
+        needsPasswordSetup: false,
+        updatedAt: new Date() 
+      })
       .where(eq(users.id, userId));
   }
 

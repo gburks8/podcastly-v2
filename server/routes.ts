@@ -619,6 +619,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin user creation endpoint
+  app.post('/api/admin/users', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = req.user;
+      if (!currentUser || !currentUser.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { firstName, lastName, email } = req.body;
+
+      if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: "First name, last name, and email are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+
+      // Create user without password (they'll set it up on first login)
+      const userData = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
+        password: null, // No password - user will set up on first login
+        needsPasswordSetup: true,
+        isAdmin: false,
+      };
+
+      const user = await storage.createUser(userData);
+      res.status(201).json({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        needsPasswordSetup: user.needsPasswordSetup,
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
   app.post('/api/admin/content', isAuthenticated, upload.fields([
     { name: 'video', maxCount: 1 },
     { name: 'headshot', maxCount: 1 },

@@ -76,7 +76,7 @@ export function setupAuth(app: Express) {
       async (email, password, done) => {
         try {
           const user = await storage.getUserByEmail(email);
-          if (!user || !(await comparePasswords(password, user.password))) {
+          if (!user || !user.password || !(await comparePasswords(password, user.password))) {
             return done(null, false, { message: 'Invalid email or password' });
           }
           return done(null, user);
@@ -177,7 +177,68 @@ export function setupAuth(app: Express) {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      needsPasswordSetup: user.needsPasswordSetup,
     });
+  });
+
+  // Admin password reset endpoint
+  app.post("/api/admin/reset-password", isAuthenticated, async (req, res) => {
+    try {
+      const currentUser = req.user;
+      if (!currentUser || !currentUser.isAdmin) {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId, newPassword } = req.body;
+      if (!userId || !newPassword) {
+        return res.status(400).json({ message: "User ID and new password are required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(userId, hashedPassword);
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // User password setup endpoint (for first-time login)
+  app.post("/api/setup-password", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user;
+      const { newPassword } = req.body;
+
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      if (!newPassword) {
+        return res.status(400).json({ message: "New password is required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      }
+
+      // Only allow if user needs password setup
+      if (!user.needsPasswordSetup) {
+        return res.status(400).json({ message: "Password already set up" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.setupUserPassword(user.id, hashedPassword);
+
+      res.json({ message: "Password set up successfully" });
+    } catch (error) {
+      console.error("Password setup error:", error);
+      res.status(500).json({ message: "Failed to set up password" });
+    }
   });
 }
 

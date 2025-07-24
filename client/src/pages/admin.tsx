@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon, Mail, ClipboardCopy } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon, Mail, ClipboardCopy, Key } from "lucide-react";
 import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
@@ -1725,6 +1725,7 @@ function Admin() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [passwordResetUser, setPasswordResetUser] = useState<User | null>(null);
   const selectedUserRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -2218,8 +2219,20 @@ function Admin() {
                           <Badge variant={(user.hasAllRemainingContent || user.hasAdditional3Videos) ? "default" : "secondary"}>
                             {(user.hasAllRemainingContent || user.hasAdditional3Videos) ? "Premium" : "Free"}
                           </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPasswordResetUser(user);
+                            }}
+                            className="ml-2"
+                          >
+                            <Key className="w-4 h-4 mr-1" />
+                            Reset Password
+                          </Button>
                           <span className="text-sm text-gray-600">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}
+                            {user.createdAt ? new Date(user.createdAt). toLocaleDateString() : "Unknown"}
                           </span>
                         </div>
                       </div>
@@ -2265,7 +2278,164 @@ function Admin() {
           });
         }}
       />
+
+      {/* Password Reset Modal */}
+      <PasswordResetModal 
+        isOpen={!!passwordResetUser}
+        onClose={() => setPasswordResetUser(null)}
+        user={passwordResetUser}
+        onPasswordReset={() => {
+          setPasswordResetUser(null);
+          toast({
+            title: "Password Reset Successfully",
+            description: "The user's password has been updated",
+          });
+        }}
+      />
     </div>
+  );
+}
+
+// Password Reset Modal Component
+interface PasswordResetModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  user: User | null;
+  onPasswordReset: () => void;
+}
+
+function PasswordResetModal({ isOpen, onClose, user, onPasswordReset }: PasswordResetModalProps) {
+  const { toast } = useToast();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleReset = async () => {
+    if (!user || !newPassword.trim()) {
+      toast({
+        title: "Password required",
+        description: "Please enter a new password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both password fields match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const response = await fetch("/api/admin/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          newPassword: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to reset password: ${response.statusText}`);
+      }
+
+      // Reset form
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      onPasswordReset();
+    } catch (error: any) {
+      toast({
+        title: "Failed to reset password",
+        description: error.message || "An error occurred while resetting the password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  }, [isOpen]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Reset Password</DialogTitle>
+          <DialogDescription>
+            Set a new password for {user?.firstName} {user?.lastName} ({user?.email})
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newPassword">New Password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              placeholder="Enter new password (minimum 6 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> The user will be able to log in immediately with this new password. 
+              Make sure to share it with them securely.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleReset} 
+            disabled={isResetting || !newPassword.trim() || !confirmPassword.trim()}
+            className="flex-1"
+          >
+            {isResetting ? "Resetting..." : "Reset Password"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
