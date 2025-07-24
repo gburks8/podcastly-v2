@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon } from "lucide-react";
+import { Upload, Users, Video, Image, Trash2, X, FileVideo, CheckCircle, FolderOpen, Calendar, Package, ExternalLink, Edit2, Plus, Send, Eye, Copy, Link, User as UserIcon, Mail, ClipboardCopy } from "lucide-react";
 import type { User, ContentItem, Project } from "@shared/schema";
 
 // Project Management Tab Component
@@ -34,6 +34,7 @@ function ProjectManagementTab() {
   const [selectedProject, setSelectedProject] = useState<(Project & { user: User; contentCount: number }) | null>(null);
   const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
   const [isProjectManageDialogOpen, setIsProjectManageDialogOpen] = useState(false);
+  const [showEmailTemplate, setShowEmailTemplate] = useState(false);
 
   const reassignMutation = useMutation({
     mutationFn: async ({ projectId, newUserId }: { projectId: string; newUserId: string }) => {
@@ -183,6 +184,8 @@ function ProjectManagementTab() {
               setIsProjectManageDialogOpen(false);
               setIsReassignDialogOpen(true);
             }}
+            showEmailTemplate={showEmailTemplate}
+            setShowEmailTemplate={setShowEmailTemplate}
           />
         )}
 
@@ -205,6 +208,16 @@ function ProjectManagementTab() {
             isLoading={reassignMutation.isPending}
           />
         )}
+
+        {/* Email Template Modal */}
+        {selectedProject && (
+          <EmailTemplateModal
+            isOpen={showEmailTemplate}
+            onClose={() => setShowEmailTemplate(false)}
+            project={selectedProject}
+            user={selectedProject.user}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -219,6 +232,8 @@ function ProjectManagementDialog({
   onReassign,
   isReassigning,
   onOpenReassignDialog,
+  showEmailTemplate,
+  setShowEmailTemplate,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -227,6 +242,8 @@ function ProjectManagementDialog({
   onReassign: (newUserId: string) => void;
   isReassigning: boolean;
   onOpenReassignDialog: () => void;
+  showEmailTemplate: boolean;
+  setShowEmailTemplate: (show: boolean) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1040,15 +1057,152 @@ function ProjectManagementDialog({
                 <Plus className="w-4 h-4 mr-2" />
                 {showUploadInterface ? 'Hide Upload' : 'Add Content'}
               </Button>
-              <Button variant="outline" size="sm">
-                <Send className="w-4 h-4 mr-2" />
-                Resend Project
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowEmailTemplate(true)}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Delivery
               </Button>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Email Template Modal Component
+function EmailTemplateModal({
+  isOpen,
+  onClose,
+  project,
+  user,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  project: Project;
+  user: User;
+}) {
+  const { toast } = useToast();
+  
+  // Generate the project link
+  const projectLink = `${window.location.origin}/project/${project.id}`;
+  
+  // Generate professional email template
+  const emailTemplate = `Subject: Your ${project.name} Content is Ready - Login Instructions
+
+Hi ${user.firstName},
+
+Great news! Your content from ${project.name} is now ready for preview and download.
+
+🎬 PROJECT DETAILS:
+Project: ${project.name}
+Created: ${new Date(project.createdAt).toLocaleDateString()}
+Content Available: Videos and headshots from your session
+
+🔐 HOW TO ACCESS YOUR CONTENT:
+
+1. Visit your project page: ${projectLink}
+
+2. Login with your account:
+   Email: ${user.email}
+   Password: Use the password you set up, or click "Forgot Password" if you need to reset it
+
+3. Preview and download your content:
+   • You have 3 FREE video downloads to start
+   • Additional packages available if you want more content
+
+📞 NEED HELP?
+If you have any trouble accessing your account or content, just reply to this email and we'll get you sorted out quickly.
+
+Thanks for working with us!
+
+Best regards,
+[Your Name]
+[Your Company]
+[Your Contact Information]
+
+---
+This is a secure link to your private content. Please don't share this link with others.`;
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(emailTemplate);
+      toast({
+        title: "Email template copied!",
+        description: "The email template has been copied to your clipboard. You can now paste it into Gmail.",
+      });
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = emailTemplate;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      toast({
+        title: "Email template copied!",
+        description: "The email template has been copied to your clipboard. You can now paste it into Gmail.",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" />
+            Client Delivery Email Template
+          </DialogTitle>
+          <DialogDescription>
+            Copy this professional email template to send to {user.firstName} {user.lastName} with their login instructions and project access.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Quick Info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-500 text-white rounded-full p-2">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900">Sending to:</h4>
+                <p className="text-blue-800">{user.firstName} {user.lastName} ({user.email})</p>
+                <p className="text-sm text-blue-600 mt-1">Project: {project.name}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Template */}
+          <div className="border rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+            <pre className="whitespace-pre-wrap text-sm font-mono text-gray-800 leading-relaxed">
+              {emailTemplate}
+            </pre>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-gray-600">
+              💡 Tip: Customize the template with your company details before sending
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button onClick={copyToClipboard} className="bg-green-600 hover:bg-green-700">
+                <ClipboardCopy className="w-4 h-4 mr-2" />
+                Copy Email Template
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
