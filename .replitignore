@@ -35,8 +35,11 @@ deploy-*.js
 production-*.js
 *.sh
 
-# Assets and Screenshots
+# Assets and Screenshots - CRITICAL: Exclude from deployment
 attached_assets
+uploads
+uploads/
+uploads/**/*
 
 # IDE and Git
 .git

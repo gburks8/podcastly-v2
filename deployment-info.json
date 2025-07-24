@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-24T20:10:18.560Z",
+  "bundleSize": "38KB server + 632KB client = 670KB total",
+  "excludedFromDeployment": [
+    "uploads/ (7.4GB of user content)",
+    "node_modules/@vitejs",
+    "node_modules/vite",
+    "Development dependencies",
+    "Source files (.ts)",
+    "Documentation files"
+  ],
+  "storageStrategy": "Use Replit Object Storage for user uploads in production",
+  "deploymentSize": "~100MB (without uploads)",
+  "readyForDeployment": true
+}
