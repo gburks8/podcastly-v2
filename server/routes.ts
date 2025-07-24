@@ -888,6 +888,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = req.params.id;
+      
+      // Verify the project exists
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Admin check - only admins can delete projects
+      if (!req.user.isAdmin) {
+        return res.status(403).json({ message: "Only administrators can delete projects" });
+      }
+      
+      await storage.deleteProject(projectId);
+      res.json({ message: "Project and all associated content deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      res.status(500).json({ message: "Failed to delete project" });
+    }
+  });
+
   app.put("/api/projects/:id/name", isAuthenticated, async (req: any, res) => {
     try {
       const projectId = req.params.id;

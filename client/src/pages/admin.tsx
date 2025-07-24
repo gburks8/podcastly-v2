@@ -253,6 +253,7 @@ function ProjectManagementDialog({
   const [selectedTab, setSelectedTab] = useState("overview");
   const [showUploadInterface, setShowUploadInterface] = useState(false);
   const [uploadQueue, setUploadQueue] = useState<any[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: projectContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
@@ -417,6 +418,36 @@ function ProjectManagementDialog({
     onError: (error: any) => {
       toast({
         title: "Failed to update project name",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/projects/${project.id}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete project");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Project deleted",
+        description: "The project and all its content have been removed successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/projects"] });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete project",
         description: error.message,
         variant: "destructive",
       });
@@ -626,6 +657,15 @@ function ProjectManagementDialog({
               >
                 <Users className="w-4 h-4 mr-2" />
                 Reassign
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
               </Button>
               <Button variant="outline" onClick={onClose}>
                 <X className="w-4 h-4" />
@@ -1069,6 +1109,59 @@ function ProjectManagementDialog({
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-red-100 rounded-full p-2">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Delete Project</h3>
+                <p className="text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-2">
+                Are you sure you want to delete <strong>{project.name}</strong>?
+              </p>
+              <p className="text-sm text-gray-600">
+                This will permanently delete:
+              </p>
+              <ul className="text-sm text-gray-600 mt-2 ml-4">
+                <li>• The project and all settings</li>
+                <li>• All {project.contentCount} videos and headshots</li>
+                <li>• Any client selections and payment records</li>
+                <li>• All associated files from storage</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  deleteProjectMutation.mutate();
+                  setShowDeleteConfirm(false);
+                }}
+                disabled={deleteProjectMutation.isPending}
+                className="flex-1"
+              >
+                {deleteProjectMutation.isPending ? "Deleting..." : "Delete Project"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
