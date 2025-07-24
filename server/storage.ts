@@ -450,6 +450,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProject(id: string): Promise<void> {
+    console.log(`🗑️  Starting deletion of project: ${id}`);
+    
     // Get all content items in this project first to delete related records
     const projectContentItems = await db
       .select({ id: contentItems.id })
@@ -457,27 +459,44 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contentItems.projectId, id));
     
     const contentItemIds = projectContentItems.map(item => item.id);
+    console.log(`📝 Found ${contentItemIds.length} content items to delete:`, contentItemIds);
     
     // Delete all related records in the correct order to avoid foreign key constraint violations
     
     // 1. Delete downloads that reference content items in this project
     if (contentItemIds.length > 0) {
-      await db.delete(downloads).where(
+      console.log(`🔄 Deleting downloads for content items...`);
+      const deletedDownloads = await db.delete(downloads).where(
         inArray(downloads.contentItemId, contentItemIds)
-      );
+      ).returning({ id: downloads.id });
+      console.log(`✅ Deleted ${deletedDownloads.length} download records`);
     }
     
     // 2. Delete project selections
-    await db.delete(projectSelections).where(eq(projectSelections.projectId, id));
+    console.log(`🔄 Deleting project selections...`);
+    const deletedSelections = await db.delete(projectSelections)
+      .where(eq(projectSelections.projectId, id))
+      .returning({ id: projectSelections.id });
+    console.log(`✅ Deleted ${deletedSelections.length} project selection records`);
     
     // 3. Delete project payments
-    await db.delete(projectPayments).where(eq(projectPayments.projectId, id));
+    console.log(`🔄 Deleting project payments...`);
+    const deletedPayments = await db.delete(projectPayments)
+      .where(eq(projectPayments.projectId, id))
+      .returning({ id: projectPayments.id });
+    console.log(`✅ Deleted ${deletedPayments.length} project payment records`);
     
     // 4. Delete content items in this project
-    await db.delete(contentItems).where(eq(contentItems.projectId, id));
+    console.log(`🔄 Deleting content items...`);
+    const deletedContent = await db.delete(contentItems)
+      .where(eq(contentItems.projectId, id))
+      .returning({ id: contentItems.id });
+    console.log(`✅ Deleted ${deletedContent.length} content item records`);
     
     // 5. Finally delete the project itself
+    console.log(`🔄 Deleting project...`);
     await db.delete(projects).where(eq(projects.id, id));
+    console.log(`✅ Successfully deleted project: ${id}`);
   }
 
   // Admin operations
