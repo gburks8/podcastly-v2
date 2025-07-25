@@ -139,6 +139,7 @@ const productionPackage = {
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "@types/ws": "^8.18.1",
     "bcrypt": "^5.1.1",
     "sharp": "^0.34.3",
     "fluent-ffmpeg": "^2.1.3",
