@@ -40,7 +40,8 @@ if (existsSync('client/dist')) {
 console.log('⚙️ Building full Express server...');
 
 try {
-  execSync('npx esbuild server/index.ts --bundle --outfile=dist/index.js --platform=node --target=node18 --format=esm --external:bcrypt --external:sharp --external:@neondatabase/serverless --external:pg --external:ws', { stdio: 'inherit' });
+  // Bundle with fewer externals to work with REPLIT_DISABLE_PACKAGE_LAYER=true
+  execSync('npx esbuild server/index.ts --bundle --outfile=dist/index.js --platform=node --target=node18 --format=esm --external:bcrypt --external:sharp --external:@neondatabase/serverless --external:ws --external:express --external:drizzle-orm --external:express-session --external:connect-pg-simple --external:passport --external:passport-local --external:zod --external:nanoid --external:multer --external:stripe', { stdio: 'inherit' });
   console.log('✅ Server built successfully');
 } catch (error) {
   console.error('Failed to build server:', error);
@@ -59,17 +60,28 @@ const productionPackage = {
     "start": "node index.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "bcrypt": "^5.1.1",
-    "@neondatabase/serverless": "^0.9.5",
-    "ws": "^8.18.0"
+    "connect-pg-simple": "^10.0.0",
+    "drizzle-orm": "^0.39.1",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^2.0.2",
+    "nanoid": "^5.1.5",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "sharp": "^0.34.3",
+    "stripe": "^18.3.0",
+    "ws": "^8.18.3",
+    "zod": "^3.24.2"
   }
 };
 
 writeFileSync('dist/package.json', JSON.stringify(productionPackage, null, 2));
 
-console.log('✅ Zero-dependency build completed!');
+console.log('✅ Production build completed!');
 console.log('📦 Build outputs:');
-console.log('   🌐 Frontend: dist/public/index.html (minimal)');
-console.log('   ⚙️ Server: dist/index.js (self-contained)');
-console.log('   📄 Dependencies: ZERO');
-console.log('🎯 Guaranteed deployment success!');
+console.log('   🌐 Frontend: dist/public/ (complete React app)');
+console.log('   ⚙️ Server: dist/index.js (bundled with externals)');
+console.log('   📄 Dependencies: All required runtime packages included');
+console.log('🎯 Ready for deployment with REPLIT_DISABLE_PACKAGE_LAYER=true!');
