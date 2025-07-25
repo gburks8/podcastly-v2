@@ -6,8 +6,8 @@ console.log('🚫 Vite-free deployment build starting...');
 console.log('📞 Redirecting to simple build system (no Vite dependencies)');
 
 try {
-  execSync('node build-local-storage.js', { stdio: 'inherit' });
-  console.log('✅ Local storage build completed successfully!');
+  execSync('node build-simple.js', { stdio: 'inherit' });
+  console.log('✅ Simple build completed successfully!');
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);
