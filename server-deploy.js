@@ -7,31 +7,79 @@ import session from 'express-session';
 import ConnectPgSimple from 'connect-pg-simple';
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import multer from 'multer';
 import { nanoid } from 'nanoid';
-import Stripe from 'stripe';
-import sgMail from '@sendgrid/mail';
-import { z } from 'zod';
-import { eq, desc, and } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
+import { z } from 'zod';
+import { eq, desc, and, sql } from 'drizzle-orm';
+import { 
+  pgTable, 
+  text, 
+  timestamp, 
+  boolean, 
+  integer, 
+  decimal, 
+  json,
+  varchar
+} from 'drizzle-orm/pg-core';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Database Schema (embedded)
+const users = pgTable('users', {
+  id: text('id').primaryKey().$defaultFn(() => nanoid()),
+  email: text('email').unique().notNull(),
+  passwordHash: text('password_hash').notNull(),
+  name: text('name'),
+  isAdmin: boolean('is_admin').default(false),
+  stripeCustomerId: text('stripe_customer_id'),
+  hasPremiumAccess: boolean('has_premium_access').default(false),
+  hasAdditional3Videos: boolean('has_additional_3_videos').default(false),
+  hasAllRemainingContent: boolean('has_all_remaining_content').default(false),
+  freeVideoSelections: text('free_video_selections').array().default([]),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+const projects = pgTable('projects', {
+  id: text('id').primaryKey().$defaultFn(() => nanoid()),
+  name: text('name').notNull(),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+const content = pgTable('content', {
+  id: text('id').primaryKey().$defaultFn(() => nanoid()),
+  title: text('title').notNull(),
+  description: text('description'),
+  type: text('type').notNull(), // 'video' or 'headshot'
+  category: text('category').notNull(), // 'free' or 'premium'
+  fileUrl: text('file_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  fileSizeBytes: integer('file_size_bytes'),
+  durationSeconds: integer('duration_seconds'),
+  aspectRatio: text('aspect_ratio'),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+const downloads = pgTable('downloads', {
+  id: text('id').primaryKey().$defaultFn(() => nanoid()),
+  userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  contentId: text('content_id').references(() => content.id, { onDelete: 'cascade' }).notNull(),
+  downloadedAt: timestamp('downloaded_at').defaultNow()
+});
+
+// Express App Setup
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Database setup
-const sql = neon(process.env.DATABASE_URL);
-const db = drizzle(sql);
-
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// SendGrid setup
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-}
+const dbSql = neon(process.env.DATABASE_URL);
+const db = drizzle(dbSql);
 
 // Session store
 const PgSession = ConnectPgSimple(session);
@@ -96,15 +144,43 @@ passport.deserializeUser(async (id, done) => {
 });
 
 // Serve static files
-app.use(express.static(join(__dirname, 'public')));
+app.use(express.static(join(__dirname, 'dist', 'public')));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 // Basic API routes
 app.get('/api/user', (req, res) => {
   if (req.user) {
-    res.json({ id: req.user.id, email: req.user.email });
+    res.json({ 
+      id: req.user.id, 
+      email: req.user.email,
+      name: req.user.name,
+      isAdmin: req.user.isAdmin || false
+    });
   } else {
     res.status(401).json({ message: 'Not authenticated' });
   }
+});
+
+app.post('/api/auth/login', passport.authenticate('local'), (req, res) => {
+  res.json({ 
+    id: req.user.id, 
+    email: req.user.email,
+    name: req.user.name,
+    isAdmin: req.user.isAdmin || false
+  });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.logout((err) => {
+    if (err) {
+      return res.status(500).json({ message: 'Logout failed' });
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
 });
 
 app.get('/api/projects', async (req, res) => {
@@ -148,9 +224,11 @@ app.get('/api/downloads/history', async (req, res) => {
 
 // Catch-all handler for client-side routing
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'index.html'));
+  res.sendFile(join(__dirname, 'dist', 'public', 'index.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📁 Static files served from: ${join(__dirname, 'dist', 'public')}`);
+  console.log(`🗄️ Database connected: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
 });
