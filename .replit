@@ -9,7 +9,7 @@ packages = ["ffmpeg"]
 [deployment]
 deploymentTarget = "autoscale"
 build = ["sh", "-c", "node vite-free-build.js"]
-run = ["sh", "-c", "NODE_ENV=production REPLIT_DISABLE_PACKAGE_LAYER=true node dist/index.js"]
+run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
 
 [workflows]
 runButton = "Project"
