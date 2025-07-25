@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import path from "path";
+import fs from "fs";
 
 // Conditional logging function that doesn't rely on Vite imports
 function log(message: string, source = "express") {
@@ -67,9 +69,7 @@ app.use((req, res, next) => {
   setupStaticServing(app);
 
   function setupStaticServing(app: express.Express) {
-    import("path").then(async (path) => {
-      const fs = await import("fs");
-      
+    try {
       // Try development build first, then production
       const possiblePaths = [
         path.resolve(import.meta.dirname, "..", "client", "dist"),
@@ -109,7 +109,7 @@ app.use((req, res, next) => {
           });
         });
       }
-    }).catch((error) => {
+    } catch (error: any) {
       log("Static file serving setup failed: " + error.message);
       app.get("*", (_req: Request, res: Response) => {
         res.status(500).json({ 
@@ -117,7 +117,7 @@ app.use((req, res, next) => {
           details: error.message
         });
       });
-    });
+    }
   }
 
   // ALWAYS serve the app on port 5000

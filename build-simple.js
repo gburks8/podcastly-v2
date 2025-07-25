@@ -63,7 +63,8 @@ const buildCommand = [
   '--public-path=/',
   '--asset-names=[name]-[hash]',
   '--define:process.env.NODE_ENV=\\"production\\"',
-  '--define:process.env.STRIPE_PUBLIC_KEY=\\"pk_test_51QKnSvFsHlZWd8GJE6ZkGZQNb1TeLF96J9zWfJZLX3tFLfW4XsJrPqsA8Qm3KVjnzHJoMfKPVqQFnUOj6IIhOIgB00XOKnz2SY\\"',
+  '--define:import.meta.env.NODE_ENV=\\"production\\"',
+  '--define:import.meta.env.VITE_STRIPE_PUBLIC_KEY=\\"pk_test_51QKnSvFsHlZWd8GJE6ZkGZQNb1TeLF96J9zWfJZLX3tFLfW4XsJrPqsA8Qm3KVjnzHJoMfKPVqQFnUOj6IIhOIgB00XOKnz2SY\\"',
   '--define:import.meta.env.PROD=true',
   '--define:import.meta.env.DEV=false',
   '--alias:@=' + resolve(__dirname, 'client/src'),
@@ -91,10 +92,34 @@ const serverBuildCommand = [
   '--outfile=dist/index.js',
   '--minify',
   '--sourcemap',
-  '--packages=bundle',
-  // Only external native packages that can't be bundled
+  '--packages=external',
+  // Externalize all Node.js built-in modules to prevent dynamic require errors
+  '--external:path',
+  '--external:fs',
+  '--external:crypto',
+  '--external:os',
+  '--external:util',
+  '--external:events',
+  '--external:stream',
+  '--external:http',
+  '--external:https',
+  '--external:url',
+  '--external:querystring',
+  '--external:zlib',
+  '--external:child_process',
+  // Only bundle these packages that can't be bundled
   '--external:bcrypt',
   '--external:esbuild',
+  '--external:sharp',
+  '--external:express',
+  '--external:@neondatabase/serverless',
+  '--external:drizzle-orm',
+  '--external:passport',
+  '--external:express-session',
+  '--external:connect-pg-simple',
+  '--external:multer',
+  '--external:ws',
+  '--external:stripe',
   '--define:process.env.NODE_ENV=\\"production\\"'
 ].join(' ');
 
@@ -118,8 +143,21 @@ const productionPackage = {
     "start": "node index.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
     "bcrypt": "^5.1.1",
-    "esbuild": "^0.25.8"
+    "connect-pg-simple": "^10.0.0",
+    "drizzle-orm": "^0.39.1",
+    "esbuild": "^0.25.8",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "multer": "^2.0.2",
+    "nanoid": "^5.1.5",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0",
+    "sharp": "^0.34.3",
+    "stripe": "^18.3.0",
+    "ws": "^8.18.3",
+    "zod": "^3.24.2"
   }
 };
 
