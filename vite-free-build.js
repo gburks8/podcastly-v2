@@ -19,7 +19,17 @@ if (existsSync('dist')) {
 // Build frontend using vite (but won't include it in server bundle)
 console.log('📦 Building frontend...');
 try {
-  execSync('npx vite build --outDir dist/public', { stdio: 'inherit' });
+  // Set production environment to ensure Replit plugins are not loaded
+  execSync('NODE_ENV=production npx vite build --outDir client/dist/public', { 
+    stdio: 'inherit',
+    env: { ...process.env, NODE_ENV: 'production' }
+  });
+  
+  // Copy frontend files to expected deployment location
+  execSync('mkdir -p dist/public', { stdio: 'inherit' });
+  execSync('cp -r client/dist/public/* dist/', { stdio: 'inherit' });
+  execSync('cp -r client/dist/public/* dist/public/', { stdio: 'inherit' });
+  
 } catch (error) {
   console.error('Frontend build failed:', error.message);
   process.exit(1);

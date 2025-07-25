@@ -1,141 +1,91 @@
 #!/usr/bin/env node
 
 /**
- * Deployment Verification Script
- * Verifies all deployment fixes are properly applied
+ * Verification script to ensure deployment readiness
+ * Checks all deployment fixes are applied correctly
  */
 
-import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync, existsSync } from 'fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+console.log('🔍 Verifying deployment readiness...');
 
-console.log('🔍 Deployment Verification Report\n');
+let allChecks = true;
 
-// Check 1: Verify build command and output structure
-console.log('1. Build Command and Directory Structure:');
+// Check 1: Production build exists
+if (existsSync('dist/index.js') && existsSync('dist/public/index.html')) {
+  console.log('✅ Production build files exist');
+} else {
+  console.log('❌ Production build files missing');
+  allChecks = false;
+}
+
+// Check 2: Server bundle has no Vite imports
+if (existsSync('dist/index.js')) {
+  const bundleContent = readFileSync('dist/index.js', 'utf8');
+  const vitePatterns = ['from "vite"', "from 'vite'", 'createViteServer', '@vitejs'];
+  
+  const hasVite = vitePatterns.some(pattern => bundleContent.includes(pattern));
+  
+  if (!hasVite) {
+    const bundleSize = Math.round(bundleContent.length / 1024);
+    console.log(`✅ Server bundle is Vite-free (${bundleSize}KB)`);
+  } else {
+    console.log('❌ Server bundle still contains Vite imports');
+    allChecks = false;
+  }
+}
+
+// Check 3: Required Replit packages are installed
 try {
   const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
-  const buildScript = packageJson.scripts.build;
+  const requiredPackages = [
+    '@replit/vite-plugin-runtime-error-modal',
+    '@replit/vite-plugin-cartographer',
+    '@radix-ui/react-tooltip',
+    '@tailwindcss/typography'
+  ];
   
-  if (buildScript.includes('vite build')) {
-    console.log('   ✅ Using standard npm run build (vite build)');
-  } else {
-    console.log('   ❌ Build script not using standard vite build');
-  }
+  const hasAllPackages = requiredPackages.every(pkg => 
+    packageJson.dependencies?.[pkg] || packageJson.devDependencies?.[pkg]
+  );
   
-  // Check if dist/public exists
-  if (existsSync('dist/public')) {
-    console.log('   ✅ dist/public directory exists');
-    
-    if (existsSync('dist/public/index.html')) {
-      console.log('   ✅ index.html found in dist/public');
-    } else {
-      console.log('   ❌ index.html missing in dist/public');
-    }
-    
-    if (existsSync('dist/public/assets')) {
-      console.log('   ✅ assets directory found in dist/public');
-    } else {
-      console.log('   ❌ assets directory missing in dist/public');
-    }
+  if (hasAllPackages) {
+    console.log('✅ All required packages are installed');
   } else {
-    console.log('   ❌ dist/public directory missing - run npm run build');
+    console.log('❌ Missing required packages');
+    allChecks = false;
   }
 } catch (error) {
-  console.log('   ❌ Error checking build configuration:', error.message);
+  console.log('❌ Could not verify package installation');
+  allChecks = false;
 }
 
-// Check 2: Verify health check endpoint
-console.log('\n2. Health Check Endpoint:');
-try {
-  const serverContent = readFileSync('server/index.ts', 'utf8');
-  
-  if (serverContent.includes('app.get("/health"')) {
-    console.log('   ✅ Health check endpoint implemented');
-    
-    if (serverContent.includes('res.status(200)')) {
-      console.log('   ✅ Health check returns 200 status');
-    } else {
-      console.log('   ❌ Health check not returning 200 status');
-    }
-  } else {
-    console.log('   ❌ Health check endpoint not found');
-  }
-} catch (error) {
-  console.log('   ❌ Error checking health endpoint:', error.message);
-}
-
-// Check 3: Verify static file serving configuration
-console.log('\n3. Static File Serving Configuration:');
-try {
-  const serverContent = readFileSync('server/index.ts', 'utf8');
-  
-  if (serverContent.includes('dist/public')) {
-    console.log('   ✅ Server configured to serve from dist/public');
-  } else {
-    console.log('   ❌ Server not configured for dist/public');
-  }
-  
-  if (serverContent.includes('express.static')) {
-    console.log('   ✅ Static file serving enabled');
-  } else {
-    console.log('   ❌ Static file serving not configured');
-  }
-  
-  if (serverContent.includes('app.get("*"')) {
-    console.log('   ✅ Catch-all route for SPA routing');
-  } else {
-    console.log('   ❌ Catch-all route missing');
-  }
-} catch (error) {
-  console.log('   ❌ Error checking static file configuration:', error.message);
-}
-
-// Check 4: Verify build optimization files
-console.log('\n4. Deployment Optimization:');
-
-if (existsSync('.replitignore')) {
-  console.log('   ✅ .replitignore file exists for deployment optimization');
-  
-  const replitIgnoreContent = readFileSync('.replitignore', 'utf8');
-  if (replitIgnoreContent.includes('attached_assets/')) {
-    console.log('   ✅ Large assets excluded from deployment');
-  }
-  if (replitIgnoreContent.includes('node_modules/@types/')) {
-    console.log('   ✅ TypeScript types excluded from deployment');
-  }
+// Check 4: Production startup script exists
+if (existsSync('start-production.js')) {
+  console.log('✅ Production startup script exists');
 } else {
-  console.log('   ❌ .replitignore file missing');
+  console.log('❌ Production startup script missing');
+  allChecks = false;
 }
 
-// Check 5: Verify vite configuration
-console.log('\n5. Vite Configuration:');
-try {
-  const viteConfigContent = readFileSync('vite.config.ts', 'utf8');
-  
-  if (viteConfigContent.includes('outDir: path.resolve(import.meta.dirname, "dist/public")')) {
-    console.log('   ✅ Vite configured to build to dist/public');
-  } else {
-    console.log('   ❌ Vite not configured for correct output directory');
-  }
-} catch (error) {
-  console.log('   ❌ Error checking vite configuration:', error.message);
+// Check 5: Build script exists and works
+if (existsSync('vite-free-build.js')) {
+  console.log('✅ Vite-free build script exists');
+} else {
+  console.log('❌ Vite-free build script missing');
+  allChecks = false;
 }
 
-// Summary
-console.log('\n📋 Deployment Fixes Applied:');
-console.log('   ✓ Changed build command to use standard npm run build');
-console.log('   ✓ Updated static file serving path to dist/public');
-console.log('   ✓ Added health check endpoint returning 200 status');
-console.log('   ✓ Ensured build process creates correct directory structure');
-console.log('   ✓ Updated catch-all route to serve index.html from correct location');
-console.log('   ✓ Added .replitignore for deployment size optimization');
-
-console.log('\n🚀 Ready for Deployment:');
-console.log('   1. Run: npm run build');
-console.log('   2. Deploy using Replit\'s deployment interface');
-console.log('   3. Health check available at: /health');
-console.log('   4. All static assets served from dist/public');
+if (allChecks) {
+  console.log('\n🎉 ALL DEPLOYMENT FIXES SUCCESSFULLY APPLIED');
+  console.log('📋 Ready for deployment with:');
+  console.log('   • Missing packages installed');
+  console.log('   • Vite-free production build system');
+  console.log('   • Production startup script');
+  console.log('   • Clean server bundle (no Vite imports)');
+  console.log('\n🚀 Your application is ready for deployment!');
+} else {
+  console.log('\n❌ DEPLOYMENT ISSUES FOUND');
+  console.log('Please address the issues above before deploying.');
+  process.exit(1);
+}

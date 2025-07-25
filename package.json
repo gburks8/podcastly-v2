@@ -12,7 +12,12 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "@radix-ui/react-tooltip": "^1.2.7",
+    "@replit/object-storage": "^1.0.0",
+    "@replit/vite-plugin-cartographer": "^0.2.7",
+    "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@stripe/react-stripe-js": "^3.8.0",
+    "@tailwindcss/typography": "^0.5.16",
     "bcrypt": "^5.1.1",
     "connect-pg-simple": "^10.0.0",
     "drizzle-orm": "^0.39.1",
