@@ -70,11 +70,10 @@ app.use((req, res, next) => {
     import("path").then(async (path) => {
       const fs = await import("fs");
       
-      // Try production build first, then development
+      // Try development build first, then production
       const possiblePaths = [
-        path.resolve(import.meta.dirname, "..", "dist", "public"),
         path.resolve(import.meta.dirname, "..", "client", "dist"),
-        path.resolve(import.meta.dirname, "..", "public")
+        path.resolve(import.meta.dirname, "..", "dist", "public")
       ];
       
       let distPath: string | null = null;

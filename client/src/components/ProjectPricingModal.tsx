@@ -11,15 +11,11 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Project, ContentItem } from "@shared/schema";
 
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
+const STRIPE_PUBLIC_KEY = process.env.STRIPE_PUBLIC_KEY || "pk_test_51QKnSvFsHlZWd8GJE6ZkGZQNb1TeLF96J9zWfJZLX3tFLfW4XsJrPqsA8Qm3KVjnzHJoMfKPVqQFnUOj6IIhOIgB00XOKnz2SY";
 
 // Log the Stripe key to debug environment issues
-console.log('🔑 Stripe public key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY ? 'Present' : 'Missing');
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY ? 
-  loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY) : 
-  Promise.reject(new Error('Missing Stripe public key'));
+console.log('🔑 Stripe public key:', STRIPE_PUBLIC_KEY ? 'Present' : 'Missing');
+const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
 
 interface ProjectPricingModalProps {
   isOpen: boolean;
