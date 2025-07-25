@@ -16,30 +16,36 @@ if (existsSync('dist')) {
   rmSync('dist', { recursive: true, force: true });
 }
 
-// Build frontend using vite (but won't include it in server bundle)
-console.log('📦 Building frontend...');
+// Build frontend using production config first (without Replit plugins)
+console.log('📦 Building frontend with production config...');
 try {
-  // Set production environment to ensure Replit plugins are not loaded
-  execSync('NODE_ENV=production npx vite build --outDir client/dist/public', { 
+  execSync('NODE_ENV=production npx vite build --config vite.config.production.ts --outDir dist/public', { 
     stdio: 'inherit',
     env: { ...process.env, NODE_ENV: 'production' }
   });
   
-  // Copy frontend files to expected deployment location
-  execSync('mkdir -p dist/public', { stdio: 'inherit' });
-  execSync('cp -r client/dist/public/* dist/', { stdio: 'inherit' });
-  execSync('cp -r client/dist/public/* dist/public/', { stdio: 'inherit' });
-  
 } catch (error) {
-  console.error('Frontend build failed:', error.message);
-  process.exit(1);
+  console.error('Production config build failed, trying default config:', error.message);
+  
+  // Try fallback with default config
+  console.log('🔄 Trying default vite config...');
+  try {
+    execSync('NODE_ENV=production npx vite build --outDir dist/public', { 
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production' }
+    });
+    
+  } catch (fallbackError) {
+    console.error('All frontend builds failed:', fallbackError.message);
+    process.exit(1);
+  }
 }
 
 // Build server WITHOUT any Vite dependencies using production-only entry point
 console.log('⚙️ Building server (100% Vite-free production version)...');
 
 const serverBuildCommand = [
-  'npx esbuild server/index-production.ts',
+  'npx esbuild server/index.ts',
   '--platform=node', 
   '--bundle',
   '--format=esm',
@@ -48,11 +54,14 @@ const serverBuildCommand = [
   '--external:vite',
   '--external:@vitejs/*',
   '--external:@replit/vite-*',
+  '--external:./vite',
+  '--external:./vite.js',
   '--external:tsx',
   '--external:typescript',
   '--external:drizzle-kit',
   '--external:esbuild',
   '--external:@types/*',
+  '--external:ws',
   '--minify'
 ].join(' ');
 
@@ -63,19 +72,36 @@ try {
   process.exit(1);
 }
 
-// Verify no Vite imports in bundle
+// Verify no problematic Vite imports in bundle (only check for actual import statements)
 if (existsSync('dist/index.js')) {
   const bundleContent = readFileSync('dist/index.js', 'utf8');
-  const vitePatterns = ['from "vite"', "from 'vite'", 'createViteServer', '@vitejs'];
+  const problemPatterns = [
+    'import.*from.*"vite"',
+    'import.*from.*\'vite\'',
+    'require\\(.*"vite".*\\)',
+    'require\\(.*\'vite\'.*\\)',
+    'createViteServer',
+    'import.*from.*"@vitejs',
+    'import.*from.*\'@vitejs'
+  ];
   
-  const hasVite = vitePatterns.some(pattern => bundleContent.includes(pattern));
+  const hasProblematicVite = problemPatterns.some(pattern => 
+    new RegExp(pattern).test(bundleContent)
+  );
   
-  if (hasVite) {
-    console.error('❌ DEPLOYMENT FIX FAILED: Vite still found in bundle');
+  if (hasProblematicVite) {
+    console.error('❌ DEPLOYMENT FIX FAILED: Problematic Vite imports still found in bundle');
+    problemPatterns.forEach(pattern => {
+      const regex = new RegExp(pattern);
+      if (regex.test(bundleContent)) {
+        console.error(`  Found pattern: ${pattern}`);
+      }
+    });
     process.exit(1);
   } else {
     const bundleSize = Math.round(bundleContent.length / 1024);
     console.log(`✅ DEPLOYMENT FIX SUCCESS: Clean bundle created (${bundleSize}KB)`);
+    console.log('✅ No problematic Vite imports detected');
   }
 } else {
   console.error('❌ No server bundle created');

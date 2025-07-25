@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     try {
       // Try to import the real vite module
-      const viteModule = await import("./vite.js").catch(async () => {
+      const viteModule = await import("./vite").catch(async () => {
         // Fallback to shim if vite module is not available
         return await import("./vite-shim.js");
       }) as { setupVite: (app: any, server: any) => Promise<void> };
