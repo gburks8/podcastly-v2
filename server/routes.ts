@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { storage } from "./storage.js";
+import { setupAuth, isAuthenticated } from "./auth.js";
 import Stripe from "stripe";
 import multer from "multer";
 import path from "path";
-import { insertContentItemSchema } from "@shared/schema";
+import { insertContentItemSchema } from "../shared/schema.js";
 import { z } from "zod";
 import fs from "fs/promises";
 
@@ -17,7 +17,7 @@ import {
   deleteFile,
   isObjectStorageReady,
   type UploadResult 
-} from "./object-storage";
+} from "./object-storage.js";
 
 // Only initialize Stripe if secret key is available
 let stripe: Stripe | null = null;

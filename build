@@ -1,15 +1,32 @@
 #!/bin/bash
+# Complete deployment build script
+echo "🚀 Building for deployment..."
 
-# Deployment build script that replaces npm run build
-# This eliminates Vite from the deployment process
+# Clean previous build
+rm -rf dist
 
-echo "🚀 Starting Replit deployment build (Vite-free)..."
+# Step 1: Build frontend with Vite (creates dist/assets and dist/index.html)
+echo "📦 Building frontend..."
+npx vite build
 
-# Set production environment
-export NODE_ENV=production
-export REPLIT_DISABLE_PACKAGE_LAYER=true
+# Step 2: Compile server TypeScript files (creates dist/server and dist/shared)
+echo "🔧 Compiling server..."
+npx tsc -p tsconfig.build.json
 
-# Run the production build script
-node build-production.js
+# Step 3: Verify all critical files exist
+echo "✅ Verifying build..."
+if [ ! -f "dist/server/index.js" ]; then
+    echo "❌ ERROR: dist/server/index.js not found"
+    exit 1
+fi
 
-echo "✅ Deployment build complete!"
+if [ ! -f "dist/index.html" ]; then
+    echo "❌ ERROR: dist/index.html not found"
+    exit 1
+fi
+
+echo "🎉 Build complete! Files ready for deployment:"
+echo "  - Frontend: dist/index.html + dist/assets/"
+echo "  - Server: dist/server/index.js"
+echo "  - Shared: dist/shared/"
+ls -la dist/
