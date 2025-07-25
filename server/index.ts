@@ -64,15 +64,27 @@ app.use((req, res, next) => {
   });
 
   // Setup appropriate serving mode based on environment
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     try {
-      // Try to import the real vite module
-      const viteModule = await import("./vite").catch(async () => {
-        // Fallback to shim if vite module is not available
-        return await import("./vite-shim.js");
-      }) as { setupVite: (app: any, server: any) => Promise<void> };
-      await viteModule.setupVite(app, server);
-      log("Vite development server setup complete");
+      // Dynamic import with try-catch to prevent bundling issues
+      const viteModule = await import("./vite.js").catch(async (viteError) => {
+        log("Vite module not available, using shim: " + viteError.message);
+        // Try to use the shim instead
+        try {
+          return await import("./vite-shim.js");
+        } catch (shimError) {
+          log("Vite shim also failed: " + (shimError as Error).message);
+          return null;
+        }
+      });
+      
+      if (viteModule && viteModule.setupVite) {
+        await viteModule.setupVite(app, server);
+        log("Vite development server setup complete");
+      } else {
+        log("Vite not available, using static serving");
+        setupProductionStaticServing(app);
+      }
     } catch (error) {
       log("Vite setup failed, falling back to static serving: " + (error as Error).message);
       setupProductionStaticServing(app);

@@ -48,6 +48,14 @@ const serverBuildCommand = [
   '--outfile=dist/index.js',
   '--minify',
   '--sourcemap',
+  // CRITICAL: Exclude ALL Vite-related imports to prevent deployment failures
+  '--external:vite',
+  '--external:@vitejs/*',
+  '--external:@replit/vite-*',
+  '--external:./vite',
+  '--external:./vite.js',
+  '--external:./vite.ts',
+  '--external:../vite.config*',
   // Node.js built-in modules
   '--external:fs',
   '--external:path', 
@@ -71,20 +79,30 @@ const serverBuildCommand = [
   '--external:readline',
   '--external:perf_hooks',
   '--external:inspector',
-  // Problematic packages that should remain external
+  // Development and build tools (should remain external)
   '--external:@babel/*',
   '--external:lightningcss',
-  '--external:sharp',
-  '--external:fluent-ffmpeg',
-  '--external:bcrypt',
-  '--external:ws',
-  '--external:vite',
-  '--external:@vitejs/*',
-  '--external:@replit/vite-*',
   '--external:tsx',
   '--external:typescript',
   '--external:drizzle-kit',
   '--external:@types/*',
+  '--external:esbuild',
+  // Runtime dependencies that should be external for proper resolution
+  '--external:sharp',
+  '--external:fluent-ffmpeg',
+  '--external:bcrypt',
+  '--external:ws',
+  '--external:multer',
+  '--external:passport',
+  '--external:passport-local',
+  '--external:express-session',
+  '--external:connect-pg-simple',
+  '--external:@neondatabase/serverless',
+  '--external:drizzle-orm',
+  '--external:stripe',
+  '--external:nanoid',
+  '--external:zod',
+  '--external:express',
   '--packages=external',
   '--define:process.env.NODE_ENV=\\"production\\"'
 ].join(' ');
@@ -96,7 +114,32 @@ try {
   process.exit(1);
 }
 
-// Step 3: Create production package.json with ONLY runtime dependencies
+// Step 3: Verify no Vite imports in production bundle
+console.log('🔍 Verifying no Vite imports in production bundle...');
+
+const bundleContent = readFileSync('dist/index.js', 'utf8');
+const viteImports = [
+  'import.*vite',
+  'require.*vite',
+  'createViteServer',
+  'from.*vite',
+  '@vitejs',
+  './vite'
+];
+
+const foundViteImports = viteImports.filter(pattern => 
+  new RegExp(pattern, 'i').test(bundleContent)
+);
+
+if (foundViteImports.length > 0) {
+  console.error('❌ Production bundle contains Vite imports:', foundViteImports);
+  console.error('This will cause deployment failures. Please fix the build configuration.');
+  process.exit(1);
+} else {
+  console.log('✅ No Vite imports found in production bundle');
+}
+
+// Step 4: Create production package.json with ONLY runtime dependencies
 console.log('📄 Creating production package.json...');
 
 // Get only production runtime dependencies (no dev deps, no build tools)
@@ -131,7 +174,7 @@ const deploymentPackageJson = {
 
 writeFileSync('dist/package.json', JSON.stringify(deploymentPackageJson, null, 2));
 
-// Step 4: Verify the build
+// Step 5: Verify the build
 const serverExists = existsSync('dist/index.js');
 const frontendExists = existsSync('dist/index.html') || existsSync('dist/public/index.html');
 const packageExists = existsSync('dist/package.json');

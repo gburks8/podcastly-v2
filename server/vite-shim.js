@@ -1,30 +1,23 @@
-/**
- * Vite shim for production environments
- * Provides fallback functionality when Vite is not available
- */
+// Production shim for vite.ts to prevent import errors
+// This file is used when Vite is not available in production
+
+export function log(message, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit", 
+    second: "2-digit",
+    hour12: true,
+  });
+
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
 
 export async function setupVite(app, server) {
-  console.log('Vite shim: Development mode detected but Vite not available');
-  
-  // Fallback to static serving when Vite is not available
-  const path = await import('path');
-  const fs = await import('fs');
-  const express = await import('express');
-  
-  const distPath = path.resolve(import.meta.dirname, '..', 'dist', 'public');
-  
-  if (fs.existsSync(distPath)) {
-    app.use(express.static(distPath));
-    app.use('*', (req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
-    });
-    console.log('Vite shim: Static file serving enabled');
-  } else {
-    app.use('*', (req, res) => {
-      res.status(500).json({ 
-        error: 'Development server not available and no build found' 
-      });
-    });
-    console.log('Vite shim: No build found, serving error responses');
-  }
+  // No-op in production
+  log("Vite setup skipped in production mode");
+}
+
+export function serveStatic(app) {
+  // No-op - handled by main server
+  log("Static serving handled by main server in production");
 }

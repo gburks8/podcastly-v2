@@ -23,6 +23,11 @@ node_modules/date-fns/
 node_modules/lucide-react/
 node_modules/@img/
 
+# CRITICAL: Exclude Vite source files from deployment to prevent import errors
+server/vite.ts
+vite.config.ts
+vite.config.js
+
 # Test files and logs
 *.log
 *.test.*
