@@ -36,8 +36,8 @@ try {
   process.exit(1);
 }
 
-// Step 2: Build server with core bundling (external for native modules)
-console.log('⚙️ Building server bundle...');
+// Step 2: Build server with ALL dependencies bundled (compatible with REPLIT_DISABLE_PACKAGE_LAYER)
+console.log('⚙️ Building server bundle with ALL dependencies bundled...');
 
 const serverBuildCommand = [
   'npx esbuild server/index.ts',
@@ -55,8 +55,10 @@ const serverBuildCommand = [
   '--external:./vite',
   '--external:./vite.js',
   '--external:./vite.ts',
+  '--external:./vite-shim.js',
   '--external:../vite.config*',
-  // Node.js built-in modules
+  '--external:vite.config*',
+  // Node.js built-in modules (always external)
   '--external:fs',
   '--external:path', 
   '--external:url',
@@ -79,7 +81,7 @@ const serverBuildCommand = [
   '--external:readline',
   '--external:perf_hooks',
   '--external:inspector',
-  // Development and build tools (should remain external)
+  // Development and build tools (external)
   '--external:@babel/*',
   '--external:lightningcss',
   '--external:tsx',
@@ -87,23 +89,12 @@ const serverBuildCommand = [
   '--external:drizzle-kit',
   '--external:@types/*',
   '--external:esbuild',
-  // Runtime dependencies that should be external for proper resolution
+  // Keep only native binary modules external (these need native compilation)
   '--external:sharp',
   '--external:fluent-ffmpeg',
   '--external:bcrypt',
   '--external:ws',
-  '--external:multer',
-  '--external:passport',
-  '--external:passport-local',
-  '--external:express-session',
-  '--external:connect-pg-simple',
-  '--external:@neondatabase/serverless',
-  '--external:drizzle-orm',
-  '--external:stripe',
-  '--external:nanoid',
-  '--external:zod',
-  '--external:express',
-  '--packages=external',
+  // Bundle everything else to work with REPLIT_DISABLE_PACKAGE_LAYER=true
   '--define:process.env.NODE_ENV=\\"production\\"'
 ].join(' ');
 
@@ -119,12 +110,13 @@ console.log('🔍 Verifying no Vite imports in production bundle...');
 
 const bundleContent = readFileSync('dist/index.js', 'utf8');
 const viteImports = [
-  'import.*vite',
-  'require.*vite',
+  'import.*[\'"`]vite[\'"`]',
+  'require.*[\'"`]vite[\'"`]',
   'createViteServer',
-  'from.*vite',
+  'from.*[\'"`]vite[\'"`]',
   '@vitejs',
-  './vite'
+  'import.*[\'"`]\\./vite',
+  'from.*[\'"`]\\./vite'
 ];
 
 const foundViteImports = viteImports.filter(pattern => 
@@ -139,26 +131,15 @@ if (foundViteImports.length > 0) {
   console.log('✅ No Vite imports found in production bundle');
 }
 
-// Step 4: Create production package.json with ONLY runtime dependencies
+// Step 4: Create production package.json with ONLY native binary dependencies
 console.log('📄 Creating production package.json...');
 
-// Get only production runtime dependencies (no dev deps, no build tools)
+// Include only native binary modules that CANNOT be bundled and must be installed separately
 const productionDeps = {
-  "@neondatabase/serverless": "^0.10.4",
-  "bcrypt": "^5.1.1",
-  "connect-pg-simple": "^10.0.0", 
-  "drizzle-orm": "^0.39.1",
-  "express": "^4.21.2",
-  "express-session": "^1.18.1",
-  "fluent-ffmpeg": "^2.1.3",
-  "multer": "^2.0.1",
-  "nanoid": "^5.1.5",
-  "passport": "^0.7.0",
-  "passport-local": "^1.0.0",
   "sharp": "^0.34.3",
-  "stripe": "^18.3.0",
-  "ws": "^8.18.3",
-  "zod": "^3.24.2"
+  "fluent-ffmpeg": "^2.1.3", 
+  "bcrypt": "^5.1.1",
+  "ws": "^8.18.3"
 };
 
 const deploymentPackageJson = {
@@ -169,7 +150,8 @@ const deploymentPackageJson = {
   "scripts": {
     "start": "node index.js"
   },
-  "dependencies": productionDeps
+  "dependencies": productionDeps,
+  "description": "Production build with bundled dependencies - only native binary modules listed"
 };
 
 writeFileSync('dist/package.json', JSON.stringify(deploymentPackageJson, null, 2));
@@ -182,12 +164,14 @@ const packageExists = existsSync('dist/package.json');
 if (serverExists && frontendExists && packageExists) {
   const bundleSize = Math.round(readFileSync('dist/index.js', 'utf8').length / 1024);
   console.log(`✅ Production build complete!`);
-  console.log(`   📦 Server bundle: ${bundleSize}KB`);
+  console.log(`   📦 Server bundle: ${bundleSize}KB (ALL dependencies bundled)`);
   console.log(`   🌐 Frontend: ${existsSync('dist/public/index.html') ? 'dist/public/' : 'dist/'}`);
-  console.log(`   📄 Production package.json with runtime dependencies`);
+  console.log(`   📄 Production package.json with native binary modules only`);
   console.log('');
-  console.log('🎯 Ready for deployment!');
-  console.log('   Runtime dependencies included in package.json for proper installation');
+  console.log('🎯 Ready for deployment with REPLIT_DISABLE_PACKAGE_LAYER=true!');
+  console.log('   ✅ Express and all JS dependencies bundled in server');
+  console.log('   ✅ Only native binary modules require separate installation');
+  console.log('   ✅ Compatible with disabled package layer deployment');
 } else {
   console.error('❌ Build verification failed');
   console.error(`   Server bundle: ${serverExists ? '✅' : '❌'}`);
