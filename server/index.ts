@@ -63,87 +63,62 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Setup appropriate serving mode based on environment
-  if (process.env.NODE_ENV === "development") {
-    try {
-      // Dynamic import with try-catch to prevent bundling issues
-      const viteModule = await import("./vite.js").catch(async (viteError) => {
-        log("Vite module not available, using shim: " + viteError.message);
-        // Try to use the shim instead
-        try {
-          return await import("./vite-shim.js");
-        } catch (shimError) {
-          log("Vite shim also failed: " + (shimError as Error).message);
-          return null;
-        }
-      });
-      
-      if (viteModule && viteModule.setupVite) {
-        await viteModule.setupVite(app, server);
-        log("Vite development server setup complete");
-      } else {
-        log("Vite not available, using static serving");
-        setupProductionStaticServing(app);
-      }
-    } catch (error) {
-      log("Vite setup failed, falling back to static serving: " + (error as Error).message);
-      setupProductionStaticServing(app);
-    }
-  } else {
-    // Production mode - use static file serving
-    setupProductionStaticServing(app);
-  }
+  // Simple static file serving for all environments
+  setupStaticServing(app);
 
-  function setupProductionStaticServing(app: express.Express) {
-    try {
-      import("path").then(async (path) => {
-        const fs = await import("fs");
-        
-        const distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
-        
-        if (fs.existsSync(distPath)) {
-          // Serve static files from dist/public
-          app.use(express.static(distPath));
-          
-          // Handle React routing - serve index.html for all non-API routes
-          app.get("*", (_req: Request, res: Response) => {
-            const indexPath = path.resolve(distPath, "index.html");
-            if (fs.existsSync(indexPath)) {
-              res.sendFile(indexPath);
-            } else {
-              res.status(404).json({ 
-                error: "Frontend assets not found. Please ensure the build process completed successfully." 
-              });
-            }
-          });
-          log(`Production static file serving setup complete from: ${distPath}`);
-        } else {
-          log(`Build directory not found at: ${distPath}`);
-          app.get("*", (_req: Request, res: Response) => {
-            res.status(500).json({ 
-              error: "Application not properly built. dist/public directory not found.",
-              expectedPath: distPath
-            });
-          });
+  function setupStaticServing(app: express.Express) {
+    import("path").then(async (path) => {
+      const fs = await import("fs");
+      
+      // Try production build first, then development
+      const possiblePaths = [
+        path.resolve(import.meta.dirname, "..", "dist", "public"),
+        path.resolve(import.meta.dirname, "..", "client", "dist"),
+        path.resolve(import.meta.dirname, "..", "public")
+      ];
+      
+      let distPath: string | null = null;
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          distPath = testPath;
+          break;
         }
-      }).catch((error) => {
-        log("Static file serving setup failed: " + error.message);
+      }
+      
+      if (distPath) {
+        // Serve static files
+        app.use(express.static(distPath));
+        
+        // Handle React routing - serve index.html for all non-API routes
+        app.get("*", (_req: Request, res: Response) => {
+          const indexPath = path.resolve(distPath!, "index.html");
+          if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+          } else {
+            res.status(404).json({ 
+              error: "Frontend index.html not found" 
+            });
+          }
+        });
+        log(`Static file serving setup complete from: ${distPath}`);
+      } else {
+        log("No frontend build directory found");
         app.get("*", (_req: Request, res: Response) => {
           res.status(500).json({ 
-            error: "Static file serving unavailable",
-            details: error.message
+            error: "Frontend not built. Run build command first.",
+            searchedPaths: possiblePaths
           });
         });
-      });
-    } catch (error) {
-      log("Static file serving setup failed: " + (error as Error).message);
+      }
+    }).catch((error) => {
+      log("Static file serving setup failed: " + error.message);
       app.get("*", (_req: Request, res: Response) => {
         res.status(500).json({ 
           error: "Static file serving unavailable",
-          details: (error as Error).message
+          details: error.message
         });
       });
-    }
+    });
   }
 
   // ALWAYS serve the app on port 5000
