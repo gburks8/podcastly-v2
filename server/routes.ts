@@ -9,7 +9,7 @@ import path from "path";
 import { insertContentItemSchema } from "@shared/schema";
 import { z } from "zod";
 import fs from "fs/promises";
-import sharp from "sharp";
+
 import { 
   uploadFile, 
   downloadFile, 
@@ -37,38 +37,12 @@ async function getVideoMetadata(videoPath: string): Promise<{ width: number; hei
   };
 }
 
-// Simplified thumbnail generation using default video icon
+// Simplified thumbnail generation - no image processing dependencies
 async function generateVideoThumbnail(videoPath: string, videoWidth?: number, videoHeight?: number): Promise<string> {
-  try {
-    // Generate a simple placeholder thumbnail using Sharp instead of ffmpeg
-    const thumbnailFilename = `thumb-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
-    const thumbnailPath = path.join('uploads/thumbnails', thumbnailFilename);
-    
-    // Ensure thumbnails directory exists
-    await fs.mkdir('uploads/thumbnails', { recursive: true });
-    
-    // Create a simple gradient thumbnail as placeholder
-    const width = 320;
-    const height = 180;
-    
-    await sharp({
-      create: {
-        width,
-        height,
-        channels: 3,
-        background: { r: 41, g: 37, b: 36 } // Dark background
-      }
-    })
-    .jpeg({ quality: 80 })
-    .toFile(thumbnailPath);
-    
-    console.log('📸 Generated placeholder thumbnail for video');
-    return `/uploads/thumbnails/${thumbnailFilename}`;
-  } catch (error) {
-    console.error('Error generating placeholder thumbnail:', error);
-    // Return empty string - frontend will handle missing thumbnails
-    return '';
-  }
+  // For deployment stability, return empty string so frontend uses default video icon
+  // This removes the sharp dependency that was causing deployment failures
+  console.log('📸 Video uploaded, using default video icon (sharp removed for deployment stability)');
+  return '';
 }
 
 // Configure multer for file uploads (temporary storage before Object Storage)

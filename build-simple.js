@@ -93,8 +93,6 @@ const serverBuildCommand = [
   '--sourcemap',
   '--packages=bundle',
   // Only external native packages that can't be bundled
-  '--external:sharp',
-  '--external:fluent-ffmpeg', 
   '--external:bcrypt',
   '--external:esbuild',
   '--define:process.env.NODE_ENV=\\"production\\"'
@@ -121,8 +119,6 @@ const productionPackage = {
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "sharp": "^0.34.3",
-    "fluent-ffmpeg": "^2.1.3",
     "esbuild": "^0.25.8"
   }
 };
