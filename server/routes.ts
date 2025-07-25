@@ -33,7 +33,7 @@ async function getVideoMetadata(videoPath: string): Promise<{ width: number; hei
       reject(new Error('Video metadata extraction timeout'));
     }, 30000); // 30 second timeout
     
-    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+    ffmpeg.ffprobe(videoPath, (err: any, metadata: any) => {
       clearTimeout(timeout);
       
       if (err) {
@@ -42,7 +42,7 @@ async function getVideoMetadata(videoPath: string): Promise<{ width: number; hei
         return;
       }
       
-      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
+      const videoStream = metadata.streams.find((stream: any) => stream.codec_type === 'video');
       if (!videoStream || !videoStream.width || !videoStream.height) {
         reject(new Error('No video stream found'));
         return;
@@ -102,7 +102,7 @@ async function generateVideoThumbnail(videoPath: string, videoWidth?: number, vi
         clearTimeout(timeout);
         resolve(`/uploads/thumbnails/${thumbnailFilename}`);
       })
-      .on('error', (err) => {
+      .on('error', (err: any) => {
         clearTimeout(timeout);
         console.error('Error generating thumbnail:', err);
         reject(err);

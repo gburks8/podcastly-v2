@@ -108,7 +108,7 @@ export function FirstDownloadInfoModal({
                 className="bg-white rounded-lg p-4 border hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group"
                 onClick={() => {
                   console.log('🔥 FirstDownloadInfoModal - Additional 3 Videos package clicked!');
-                  onPurchasePackage?.('additional_3_videos'); // Fixed parameter name
+                  onPurchasePackage?.('additional3Videos'); // Fixed parameter name
                 }}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -137,7 +137,7 @@ export function FirstDownloadInfoModal({
                 className="bg-white rounded-lg p-4 border hover:border-green-300 hover:shadow-md transition-all cursor-pointer group"
                 onClick={() => {
                   console.log('🔥 FirstDownloadInfoModal - All Content package clicked!');
-                  onPurchasePackage?.('all_remaining_content'); // Fixed parameter name
+                  onPurchasePackage?.('allRemainingContent'); // Fixed parameter name
                 }}
               >
                 <div className="flex items-center justify-between mb-2">

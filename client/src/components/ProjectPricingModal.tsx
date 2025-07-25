@@ -140,7 +140,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
     },
     enabled: isOpen,
     staleTime: 0, // Always refetch
-    cacheTime: 0, // Don't cache
+    gcTime: 0, // Don't cache
   });
 
   const { data: hasAllContentAccess = false } = useQuery({
@@ -155,7 +155,7 @@ export function ProjectPricingModal({ isOpen, onClose, onSuccess, project, proje
     },
     enabled: isOpen,
     staleTime: 0, // Always refetch
-    cacheTime: 0, // Don't cache
+    gcTime: 0, // Don't cache
   });
 
   const createPaymentIntentMutation = useMutation({
