@@ -7,7 +7,7 @@ console.log('📞 Redirecting to simple build system (no Vite dependencies)');
 
 try {
   execSync('node build-simple.js', { stdio: 'inherit' });
-  console.log('✅ Comprehensive build completed successfully!');
+  console.log('✅ Production build completed successfully!');
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);

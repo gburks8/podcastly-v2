@@ -31,27 +31,17 @@ for (const file of requiredFiles) {
   }
 }
 
-// Check package.json dependencies
-console.log('\n📦 Checking production dependencies:');
+// Check package.json dependencies (bundled approach - only native modules)
+console.log('\n📦 Checking production dependencies (bundled approach):');
 const packageJson = JSON.parse(readFileSync('dist/package.json', 'utf8'));
-const requiredDeps = [
+const requiredNativeDeps = [
   '@neondatabase/serverless',
-  'express',
-  'drizzle-orm',
   'bcrypt',
   'sharp',
-  'ws',
-  'stripe',
-  'express-session',
-  'connect-pg-simple',
-  'passport',
-  'passport-local',
-  'multer',
-  'nanoid',
-  'zod'
+  'ws'
 ];
 
-for (const dep of requiredDeps) {
+for (const dep of requiredNativeDeps) {
   if (packageJson.dependencies[dep]) {
     console.log(`✅ ${dep}: ${packageJson.dependencies[dep]}`);
   } else {
@@ -59,6 +49,9 @@ for (const dep of requiredDeps) {
     process.exit(1);
   }
 }
+
+console.log(`\n📊 Total production dependencies: ${Object.keys(packageJson.dependencies).length} (native modules only)`);
+console.log('📝 Note: All JavaScript dependencies (express, drizzle-orm, stripe, etc.) are bundled in server.js');
 
 // Check server bundle size
 const serverStats = existsSync('dist/index.js') ? 
