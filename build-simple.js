@@ -91,30 +91,12 @@ const serverBuildCommand = [
   '--outfile=dist/index.js',
   '--minify',
   '--sourcemap',
-  // External native modules and problematic packages
+  '--packages=bundle',
+  // Only external native packages that can't be bundled
   '--external:sharp',
   '--external:fluent-ffmpeg', 
   '--external:bcrypt',
-  '--external:ws',
-  '--external:@neondatabase/serverless',
   '--external:esbuild',
-  '--external:path',
-  '--external:fs',
-  '--external:crypto',
-  '--external:http',
-  '--external:https',
-  '--external:stream',
-  '--external:util',
-  '--external:events',
-  '--external:buffer',
-  '--external:querystring',
-  '--external:zlib',
-  '--external:os',
-  '--external:net',
-  '--external:tls',
-  '--external:child_process',
-  '--external:cluster',
-  '--external:worker_threads',
   '--define:process.env.NODE_ENV=\\"production\\"'
 ].join(' ');
 
@@ -138,12 +120,9 @@ const productionPackage = {
     "start": "node index.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "@types/ws": "^8.18.1",
     "bcrypt": "^5.1.1",
     "sharp": "^0.34.3",
     "fluent-ffmpeg": "^2.1.3",
-    "ws": "^8.18.3",
     "esbuild": "^0.25.8"
   }
 };
