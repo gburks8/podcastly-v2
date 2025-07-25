@@ -13,8 +13,7 @@ import Stripe from 'stripe';
 import sgMail from '@sendgrid/mail';
 import { z } from 'zod';
 import { eq, desc, and } from 'drizzle-orm';
-import { users, content, projects, downloads, packages, packagePurchases } from './shared/schema.js';
-import { createInsertSchema } from 'drizzle-zod';
+import bcrypt from 'bcrypt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
