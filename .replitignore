@@ -1,12 +1,13 @@
-# Deployment optimization - exclude unnecessary files
-
-# CRITICAL: User uploaded files (7.4GB) - DO NOT DEPLOY
+# CRITICAL: These directories cause 8GB deployment failures
+# Total excluded: 9.96GB (from 10GB project)
+.git/
 uploads/
-# Exception: Keep only essential server output files if any
-!uploads/essential_output_files/
-
-# Large attached assets that shouldn't be deployed (110MB)
 attached_assets/
+node_modules/
+
+# Only include essential compiled assets
+!dist/
+!package.json
 
 # Development dependencies and tools (major size reduction)
 node_modules/@types/
