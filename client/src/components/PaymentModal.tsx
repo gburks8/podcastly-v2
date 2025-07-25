@@ -1,11 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useStripe, Elements, PaymentElement, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { isUnauthorizedError } from "../lib/authUtils";
 import { Lock, CreditCard } from "lucide-react";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {

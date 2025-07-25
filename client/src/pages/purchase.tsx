@@ -1,15 +1,16 @@
+import React from "react"
 import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../hooks/useAuth";
+import { apiRequest } from "../lib/queryClient";
+import { isUnauthorizedError } from "../lib/authUtils";
 import { ArrowLeft, Video, Image, Lock } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
 

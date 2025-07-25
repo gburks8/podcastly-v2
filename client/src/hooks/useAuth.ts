@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getQueryFn } from "@/lib/queryClient";
+import { getQueryFn } from "../lib/queryClient";
 import type { User } from "@shared/schema";
 
 export function useAuth() {

@@ -1,7 +1,8 @@
+import React from "react"
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Badge } from "./ui/badge";
 import { Check, Download, Package, Video } from "lucide-react";
 
 interface FirstDownloadInfoModalProps {

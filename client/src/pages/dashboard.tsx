@@ -1,12 +1,13 @@
+import React from "react"
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "../hooks/useAuth";
+import { useToast } from "../hooks/use-toast";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { isUnauthorizedError } from "../lib/authUtils";
+import { apiRequest } from "../lib/queryClient";
 import { useLocation } from "wouter";
 
 import { 

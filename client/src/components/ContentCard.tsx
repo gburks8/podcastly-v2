@@ -1,11 +1,12 @@
+import React from "react"
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { isUnauthorizedError } from "../lib/authUtils";
 import { Download, Lock, Play, Image, Clock, Video, Package } from "lucide-react";
 import type { ContentItem } from "@shared/schema";
 import { VideoPreviewModal } from "./VideoPreviewModal";

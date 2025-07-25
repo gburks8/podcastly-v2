@@ -1,18 +1,19 @@
+import React from "react"
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "../hooks/useAuth";
+import { useToast } from "../hooks/use-toast";
+import { apiRequest } from "../lib/queryClient";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { ArrowLeft, Video, Image, Download, Clock, Package, UserCheck } from "lucide-react";
-import { ContentCard } from "@/components/ContentCard";
-import { ProjectPricingModal } from "@/components/ProjectPricingModal";
-import { FirstDownloadInfoModal } from "@/components/FirstDownloadInfoModal";
-import { ProjectReassignDialog } from "@/components/ProjectReassignDialog";
+import { ContentCard } from "../components/ContentCard";
+import { ProjectPricingModal } from "../components/ProjectPricingModal";
+import { FirstDownloadInfoModal } from "../components/FirstDownloadInfoModal";
+import { ProjectReassignDialog } from "../components/ProjectReassignDialog";
 import type { ContentItem, Download as DownloadType, Project, ProjectSelection } from "@shared/schema";
 
 export default function ProjectDetail() {
