@@ -179,18 +179,19 @@ export const projectSelectionsRelations = relations(projectSelections, ({ one })
 }));
 
 // Schemas
-export const insertUserSchema = createInsertSchema(users).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true,
-  stripeCustomerId: true,
-  profileImageUrl: true,
-  freeVideoSelectionsUsed: true,
-  freeHeadshotSelectionsUsed: true,
-  hasAdditional3Videos: true,
-  hasAllRemainingContent: true,
-  needsPasswordSetup: true,
-  password: true // Password will be set during first login
+export const insertUserSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  password: z.string().optional(),
+  profileImageUrl: z.string().optional(),
+  stripeCustomerId: z.string().optional(),
+  freeVideoSelectionsUsed: z.number().default(0),
+  freeHeadshotSelectionsUsed: z.number().default(0),
+  hasAdditional3Videos: z.boolean().default(false),
+  hasAllRemainingContent: z.boolean().default(false),
+  isAdmin: z.boolean().default(false),
+  needsPasswordSetup: z.boolean().default(true),
 });
 
 // Schema for password setup during first login
@@ -202,21 +203,22 @@ export const passwordSetupSchema = z.object({
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
-export const insertContentItemSchema = createInsertSchema(contentItems).omit({ id: true, createdAt: true });
+
+export const insertContentItemSchema = createInsertSchema(contentItems);
 export const insertDownloadSchema = createInsertSchema(downloads);
-export const insertProjectSchema = createInsertSchema(projects).omit({ createdAt: true, updatedAt: true });
+export const insertProjectSchema = createInsertSchema(projects);
 export const insertProjectSelectionSchema = createInsertSchema(projectSelections);
 export const insertProjectPaymentSchema = createInsertSchema(projectPayments);
 
 // Types
 export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
+export type UpsertUser = z.infer<typeof insertUserSchema> & { id?: string };
 export type ContentItem = typeof contentItems.$inferSelect;
 export type InsertContentItem = typeof contentItems.$inferInsert;
 export type Download = typeof downloads.$inferSelect;
 export type InsertDownload = typeof downloads.$inferInsert;
 export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertProject = typeof projects.$inferInsert;
 export type ProjectSelection = typeof projectSelections.$inferSelect;
 export type InsertProjectSelection = typeof projectSelections.$inferInsert;
 export type ProjectPayment = typeof projectPayments.$inferSelect;

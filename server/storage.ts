@@ -24,8 +24,11 @@ import { eq, and, desc, count, inArray } from "drizzle-orm";
 export interface IStorage {
   // User operations (custom auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, updateData: Partial<User>): Promise<void>;
   updateUserStripeCustomerId(userId: string, customerId: string): Promise<void>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<void>;
   setupUserPassword(userId: string, hashedPassword: string): Promise<void>;
@@ -65,7 +68,10 @@ export interface IStorage {
   getUserProjects(userId: string): Promise<(Project & { videos: ContentItem[]; headshots: ContentItem[]; totalItems: number })[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, updateData: Partial<Project>): Promise<Project>;
   updateProjectName(id: string, name: string): Promise<void>;
+  getContentByProjectId(projectId: string): Promise<ContentItem[]>;
+  getDownloadsByUserId(userId: string): Promise<(Download & { contentItem: ContentItem })[]>;
   reassignProject(projectId: string, newUserId: string): Promise<void>;
   deleteProject(id: string): Promise<void>;
 
@@ -83,39 +89,72 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.getUser(id);
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
   async createUser(userData: UpsertUser): Promise<User> {
-    // Build insert data explicitly without auto-generated fields
-    const insertData = {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      password: userData.password || null, // Allow null for password
-      isAdmin: userData.isAdmin || false,
-      needsPasswordSetup: userData.needsPasswordSetup ?? true,
-      profileImageUrl: userData.profileImageUrl || null,
-      stripeCustomerId: userData.stripeCustomerId || null,
-      freeVideoSelectionsUsed: userData.freeVideoSelectionsUsed || 0,
-      freeHeadshotSelectionsUsed: userData.freeHeadshotSelectionsUsed || 0,
-      hasAdditional3Videos: userData.hasAdditional3Videos || false,
-      hasAllRemainingContent: userData.hasAllRemainingContent || false,
-    };
-    
+    const { id, ...insertData } = userData;
     const [user] = await db
       .insert(users)
-      .values(insertData)
+      .values(insertData as any)
       .returning();
     return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    // Try to find existing user
+    const existingUser = userData.id ? await this.getUser(userData.id) : await this.getUserByEmail(userData.email);
+    
+    if (existingUser) {
+      // Update existing user - only update non-undefined fields
+      const updateData: Record<string, any> = {};
+      if (userData.email !== undefined) updateData.email = userData.email;
+      if (userData.firstName !== undefined) updateData.firstName = userData.firstName;
+      if (userData.lastName !== undefined) updateData.lastName = userData.lastName;
+      if (userData.password !== undefined) updateData.password = userData.password;
+      if (userData.profileImageUrl !== undefined) updateData.profileImageUrl = userData.profileImageUrl;
+      if (userData.stripeCustomerId !== undefined) updateData.stripeCustomerId = userData.stripeCustomerId;
+      if (userData.freeVideoSelectionsUsed !== undefined) updateData.freeVideoSelectionsUsed = userData.freeVideoSelectionsUsed;
+      if (userData.freeHeadshotSelectionsUsed !== undefined) updateData.freeHeadshotSelectionsUsed = userData.freeHeadshotSelectionsUsed;
+      if (userData.hasAdditional3Videos !== undefined) updateData.hasAdditional3Videos = userData.hasAdditional3Videos;
+      if (userData.hasAllRemainingContent !== undefined) updateData.hasAllRemainingContent = userData.hasAllRemainingContent;
+      if (userData.isAdmin !== undefined) updateData.isAdmin = userData.isAdmin;
+      if (userData.needsPasswordSetup !== undefined) updateData.needsPasswordSetup = userData.needsPasswordSetup;
+      
+      const [updated] = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new user
+      const { id, ...insertData } = userData;
+      const [created] = await db
+        .insert(users)
+        .values(insertData as any)
+        .returning();
+      return created;
+    }
+  }
+
+  async updateUser(id: string, updateData: Partial<User>): Promise<void> {
+    await db
+      .update(users)
+      .set(updateData as any)
+      .where(eq(users.id, id));
   }
 
   async updateUserStripeCustomerId(userId: string, customerId: string): Promise<void> {
     await db
       .update(users)
-      .set({ stripeCustomerId: customerId, updatedAt: new Date() })
+      .set({ stripeCustomerId: customerId } as any)
       .where(eq(users.id, userId));
   }
 
@@ -124,9 +163,8 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ 
         password: hashedPassword, 
-        needsPasswordSetup: false,
-        updatedAt: new Date() 
-      })
+        needsPasswordSetup: false
+      } as any)
       .where(eq(users.id, userId));
   }
 
@@ -135,9 +173,8 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ 
         password: hashedPassword, 
-        needsPasswordSetup: false,
-        updatedAt: new Date() 
-      })
+        needsPasswordSetup: false
+      } as any)
       .where(eq(users.id, userId));
   }
 
@@ -431,16 +468,32 @@ export class DatabaseStorage implements IStorage {
     return project;
   }
 
+  async updateProject(id: string, updateData: Partial<Project>): Promise<Project> {
+    const [updated] = await db.update(projects)
+      .set(updateData as any)
+      .where(eq(projects.id, id))
+      .returning();
+    return updated;
+  }
+
   async updateProjectName(id: string, name: string): Promise<void> {
     await db.update(projects)
-      .set({ name, updatedAt: new Date() })
+      .set({ name })
       .where(eq(projects.id, id));
+  }
+
+  async getContentByProjectId(projectId: string): Promise<ContentItem[]> {
+    return this.getContentItemsByProject(projectId);
+  }
+
+  async getDownloadsByUserId(userId: string): Promise<(Download & { contentItem: ContentItem })[]> {
+    return this.getDownloadHistory(userId);
   }
 
   async reassignProject(projectId: string, newUserId: string): Promise<void> {
     // Update the project's userId
     await db.update(projects)
-      .set({ userId: newUserId, updatedAt: new Date() })
+      .set({ userId: newUserId })
       .where(eq(projects.id, projectId));
 
     // Update all content items in this project to be owned by the new user

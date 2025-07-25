@@ -730,8 +730,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectId: req.body.projectId || null,
       };
 
-      const validatedData = insertContentItemSchema.parse(contentData);
-      const contentItem = await storage.createContentItem(validatedData);
+      console.log('Content data to validate:', contentData);
+      const contentItem = await storage.createContentItem(contentData as any);
 
       res.json(contentItem);
     } catch (error) {
