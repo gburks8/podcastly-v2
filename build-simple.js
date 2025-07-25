@@ -91,17 +91,15 @@ const serverBuildCommand = [
   '--outfile=dist/index.js',
   '--minify',
   '--sourcemap',
-  // External native modules that can't be bundled
+  // External native modules and problematic packages
   '--external:sharp',
-  '--external:fluent-ffmpeg',
+  '--external:fluent-ffmpeg', 
   '--external:bcrypt',
   '--external:ws',
   '--external:@neondatabase/serverless',
   '--external:esbuild',
-  // External Node.js built-ins
-  '--external:fs',
   '--external:path',
-  '--external:url',
+  '--external:fs',
   '--external:crypto',
   '--external:http',
   '--external:https',

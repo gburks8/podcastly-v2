@@ -13,9 +13,7 @@ node_modules/
 node_modules/@types/
 node_modules/typescript/
 node_modules/tsx/
-node_modules/vite/
-node_modules/@vitejs/
-node_modules/@replit/vite-*
+# No Vite packages to exclude - removed from dependencies
 node_modules/drizzle-kit/
 node_modules/esbuild/
 node_modules/react-icons/
@@ -23,10 +21,7 @@ node_modules/date-fns/
 node_modules/lucide-react/
 node_modules/@img/
 
-# CRITICAL: Exclude Vite source files from deployment to prevent import errors
-server/vite.ts
-vite.config.ts
-vite.config.js
+# No Vite files to exclude - completely removed from project
 
 # Test files and logs
 *.log
@@ -43,7 +38,6 @@ server/*.ts
 !dist/
 
 # Development artifacts and caches
-.vite/
 .cache/
 node_modules/.cache/
 tmp/
@@ -56,7 +50,7 @@ Thumbs.db
 .idea/
 *.map
 tsconfig.json
-vite.config.ts
+# No vite.config.ts to exclude - file removed
 tailwind.config.ts
 postcss.config.js
 .env.local
