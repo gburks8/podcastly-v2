@@ -6,8 +6,8 @@ console.log('🚫 Vite-free deployment build starting...');
 console.log('📞 Redirecting to simple build system (no Vite dependencies)');
 
 try {
-  execSync('node build-simple.js', { stdio: 'inherit' });
-  console.log('✅ Vite-free build completed successfully!');
+  execSync('node build-zero-deps.js', { stdio: 'inherit' });
+  console.log('✅ Zero-dependency build completed successfully!');
 } catch (error) {
   console.error('❌ Build failed:', error.message);
   process.exit(1);
