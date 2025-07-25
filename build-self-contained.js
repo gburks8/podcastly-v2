@@ -3,7 +3,7 @@
 // This build bundles EVERYTHING possible to avoid package resolution issues
 
 import { execSync } from 'child_process';
-import { writeFileSync, mkdirSync, existsSync, copyFileSync, rmSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, copyFileSync, rmSync, readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
