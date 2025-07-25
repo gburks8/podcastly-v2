@@ -80,7 +80,7 @@ export default function Purchase() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [, params] = useRoute("/purchase/:id");
-  const contentId = params?.id ? parseInt(params.id) : null;
+  const contentId = params && (params as { id: string }).id ? parseInt((params as { id: string }).id) : null;
   const [clientSecret, setClientSecret] = useState("");
 
   // Redirect to login if not authenticated
@@ -98,7 +98,7 @@ export default function Purchase() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: contentItem, isLoading: isLoadingContent } = useQuery({
+  const { data: contentItem, isLoading: isLoadingContent } = useQuery<ContentItem>({
     queryKey: [`/api/content/${contentId}/details`],
     enabled: !!contentId,
   });

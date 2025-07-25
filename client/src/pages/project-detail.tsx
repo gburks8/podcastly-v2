@@ -38,13 +38,15 @@ export default function ProjectDetail() {
   const [pendingDownload, setPendingDownload] = useState<{ id: string; title: string } | null>(null);
   const queryClient = useQueryClient();
 
-  if (!match || !params?.projectId) {
+  if (!match || !params) {
     return <div>Project not found</div>;
   }
 
+  const projectId = (params as { projectId: string }).projectId;
+
   // Get project details
   const { data: project, isLoading: projectLoading, error: projectError } = useQuery<Project>({
-    queryKey: [`/api/projects/${params.projectId}`],
+    queryKey: [`/api/projects/${projectId}`],
     enabled: isAuthenticated,
   });
   
@@ -57,13 +59,13 @@ export default function ProjectDetail() {
 
   // Get project content
   const { data: projectContent = [], isLoading: contentLoading } = useQuery<ContentItem[]>({
-    queryKey: [`/api/projects/${params.projectId}/content`],
+    queryKey: [`/api/projects/${projectId}/content`],
     enabled: isAuthenticated,
   });
 
   // Get project selections
   const { data: projectSelections = [], isLoading: selectionsLoading } = useQuery<ProjectSelection[]>({
-    queryKey: [`/api/projects/${params.projectId}/selections`],
+    queryKey: [`/api/projects/${projectId}/selections`],
     enabled: isAuthenticated,
   });
 
@@ -74,13 +76,13 @@ export default function ProjectDetail() {
 
   // Check package access
   const { data: hasAllContentAccess = false } = useQuery({
-    queryKey: [`/api/projects/${params.projectId}/package-access/all_content`],
+    queryKey: [`/api/projects/${projectId}/package-access/all_content`],
     enabled: isAuthenticated,
     select: (data: { hasAccess: boolean }) => data.hasAccess,
   });
 
   const { data: hasAdditional3VideosAccess = false } = useQuery({
-    queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`],
+    queryKey: [`/api/projects/${projectId}/package-access/additional_3_videos`],
     enabled: isAuthenticated,
     select: (data: { hasAccess: boolean }) => data.hasAccess,
   });
@@ -150,7 +152,7 @@ export default function ProjectDetail() {
       (hasAdditional3VideosAccess && contentItem.type === 'video');
     
     // Debug logging to track access changes
-    if (contentItem.id === 'content-1753131071593-hs0p4qxez') { // Log for first video to track changes
+    if (typeof contentItem.id === 'string' && contentItem.id === 'content-1753131071593-hs0p4qxez') { // Log for first video to track changes
       console.log('🔍 Access check for video:', {
         contentId: contentItem.id,
         isSelected,
@@ -189,7 +191,7 @@ export default function ProjectDetail() {
 
       // Refresh download history to update the UI
       queryClient.invalidateQueries({ queryKey: ["/api/downloads/history"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/selections`] });
     } catch (error: any) {
       console.error('Download error:', error);
       toast({
@@ -205,19 +207,19 @@ export default function ProjectDetail() {
     setIsProjectPricingModalOpen(false);
     
     // Force refresh of ALL relevant queries to ensure UI updates
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}`] });
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });  
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/content`] });
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`] });
-    queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/all_content`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/selections`] });  
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/content`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/package-access/additional_3_videos`] });
+    queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/package-access/all_content`] });
     queryClient.invalidateQueries({ queryKey: ['/api/user'] }); // Refresh user data
     queryClient.invalidateQueries({ queryKey: ['/api/downloads/history'] });
     
     // Force a refetch immediately 
     setTimeout(() => {
       console.log('🔄 Force refetching package access queries');
-      queryClient.refetchQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/additional_3_videos`] });
-      queryClient.refetchQueries({ queryKey: [`/api/projects/${params.projectId}/package-access/all_content`] });
+      queryClient.refetchQueries({ queryKey: [`/api/projects/${projectId}/package-access/additional_3_videos`] });
+      queryClient.refetchQueries({ queryKey: [`/api/projects/${projectId}/package-access/all_content`] });
     }, 1000);
   };
 
@@ -409,7 +411,7 @@ export default function ProjectDetail() {
               
               console.log('🔥 Selection successful, refreshing queries');
               // Refresh selections to update the UI
-              queryClient.invalidateQueries({ queryKey: [`/api/projects/${params.projectId}/selections`] });
+              queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/selections`] });
               
               setIsFirstDownloadInfoModalOpen(false);
               setPendingDownload(null);
@@ -444,7 +446,7 @@ export default function ProjectDetail() {
       <ProjectReassignDialog
         isOpen={isReassignDialogOpen}
         onClose={() => setIsReassignDialogOpen(false)}
-        projectId={params.projectId}
+        projectId={projectId}
         projectName={project?.name || ""}
         currentUserId={project?.userId || ""}
       />

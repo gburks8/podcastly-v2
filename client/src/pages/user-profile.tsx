@@ -53,27 +53,29 @@ export default function UserProfile() {
   const [newProjectName, setNewProjectName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  if (!match || !params?.userId) {
+  if (!match || !params) {
     return <div>User not found</div>;
   }
 
+  const userId = (params as { userId: string }).userId;
+
   const { data: user } = useQuery<User>({
-    queryKey: ["/api/admin/users", params.userId],
+    queryKey: ["/api/admin/users", userId],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/users/${params.userId}`, {
+      const response = await fetch(`/api/admin/users/${userId}`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch user");
       return response.json();
     },
-    enabled: isAuthenticated && !!params.userId,
+    enabled: isAuthenticated && !!userId,
   });
 
   const { data: userProjects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects", "user", params.userId],
+    queryKey: ["/api/projects", "user", userId],
     queryFn: async () => {
       // Get projects for this user
-      const projectsResponse = await fetch(`/api/admin/users/${params.userId}/projects`, {
+      const projectsResponse = await fetch(`/api/admin/users/${userId}/projects`, {
         credentials: "include",
       });
       if (!projectsResponse.ok) {
@@ -81,7 +83,7 @@ export default function UserProfile() {
       }
       return projectsResponse.json();
     },
-    enabled: isAuthenticated && !!params.userId,
+    enabled: isAuthenticated && !!userId,
   });
 
   // Update project name mutation
@@ -97,7 +99,7 @@ export default function UserProfile() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", "user", params.userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", "user", userId] });
       toast({
         title: "Project updated",
         description: "Project name has been saved successfully.",
@@ -227,7 +229,7 @@ export default function UserProfile() {
     },
     onSuccess: (data, item) => {
       updateQueueItem(item.id, { status: 'completed', progress: 100 });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/content", "user", params?.userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/content", "user", userId] });
       toast({
         title: "Upload successful",
         description: `${item.title} has been uploaded successfully`,
@@ -286,7 +288,7 @@ export default function UserProfile() {
     for (const item of pendingItems) {
       try {
         // Update the upload mutation to include projectId
-        const originalMutationFn = uploadMutation.mutationFn;
+        // Execute the upload mutation for each item
         const formData = new FormData();
         
         if (item.type === 'video') {
@@ -337,13 +339,13 @@ export default function UserProfile() {
       setUploadQueue([]);
       setNewProjectName("");
       setShowCreateProject(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users", params?.userId, "projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users", userId, "projects"] });
       toast({
         title: "Upload complete",
         description: `All ${pendingItems.length} files uploaded successfully to "${newProjectName.trim() || `Project ${new Date().toLocaleDateString()}`}"`,
       });
     }
-  }, [uploadQueue, uploadMutation, newProjectName, user, toast, queryClient, params?.userId, updateQueueItem, setUploadQueue, setNewProjectName, setShowCreateProject]);
+  }, [uploadQueue, uploadMutation, newProjectName, user, toast, queryClient, userId, updateQueueItem, setUploadQueue, setNewProjectName, setShowCreateProject]);
 
   // Project name editing
   const handleEditProjectName = useCallback(() => {

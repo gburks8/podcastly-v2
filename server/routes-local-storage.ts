@@ -131,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/content/user/:userId', isAuthenticated, async (req, res) => {
     try {
       const { userId } = req.params;
-      const content = await storage.getContentByUserId(userId);
+      const content = await storage.getContentItemsByUser(userId);
       res.json(content);
     } catch (error) {
       console.error('Error fetching user content:', error);
@@ -159,6 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!finalProjectId && projectName) {
         try {
           const newProject = await storage.createProject({
+            id: `project-${Date.now()}`,
             name: projectName,
             userId: userId || req.user!.id
           });
@@ -184,21 +185,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const contentItem = {
           title,
-          description: description || '',
           type: 'video' as const,
-          category: category || 'general',
-          fileUrl: `/uploads/videos/${videoFile.filename}`,
-          thumbnailUrl: thumbnailPath,
-          metadata: {
-            width: metadata.width,
-            height: metadata.height,
-            aspectRatio: metadata.aspectRatio,
-            duration: 0,
-            fileSize: videoFile.size,
-            mimeType: videoFile.mimetype
-          },
           userId: userId || req.user!.id,
-          projectId: finalProjectId
+          category: category || 'general',
+          filename: videoFile.filename,
+          fileUrl: `/uploads/videos/${videoFile.filename}`
         };
 
         const savedItem = await storage.createContentItem(contentItem);
@@ -211,20 +202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const contentItem = {
           title: title + ' - Headshot',
-          description: description || '',
           type: 'headshot' as const,
-          category: category || 'general',
-          fileUrl: `/uploads/headshots/${headshotFile.filename}`,
-          thumbnailUrl: `/uploads/headshots/${headshotFile.filename}`, // Use the image itself as thumbnail
-          metadata: {
-            width: 1920, // Default dimensions
-            height: 1080,
-            aspectRatio: 16/9,
-            fileSize: headshotFile.size,
-            mimeType: headshotFile.mimetype
-          },
           userId: userId || req.user!.id,
-          projectId: finalProjectId
+          category: category || 'general',
+          filename: headshotFile.filename,
+          fileUrl: `/uploads/headshots/${headshotFile.filename}`
         };
 
         const savedItem = await storage.createContentItem(contentItem);
@@ -247,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/content/:id/details', async (req, res) => {
     try {
       const { id } = req.params;
-      const content = await storage.getContentItemById(id);
+      const content = await storage.getContentItem(parseInt(id));
       
       if (!content) {
         return res.status(404).json({ message: 'Content not found' });
@@ -266,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       
       // Get content details first to delete associated files
-      const content = await storage.getContentItemById(id);
+      const content = await storage.getContentItem(parseInt(id));
       if (content) {
         // Delete local files
         try {
@@ -281,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      await storage.deleteContentItem(id);
+      await storage.deleteContentItem(parseInt(id));
       res.json({ success: true, message: 'Content deleted successfully' });
     } catch (error) {
       console.error('Error deleting content:', error);
@@ -294,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all projects for current user
   app.get('/api/projects', isAuthenticated, async (req, res) => {
     try {
-      const projects = await storage.getProjectsByUserId(req.user!.id);
+      const projects = await storage.getAllProjects();
       res.json(projects);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -306,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/projects/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const project = await storage.getProjectById(id);
+      const project = await storage.getProject(id);
       
       if (!project) {
         return res.status(404).json({ message: 'Project not found' });
@@ -334,6 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const project = await storage.createProject({
+        id: `project-${Date.now()}`,
         name,
         userId: userId || req.user!.id
       });
@@ -599,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         hasAdditional3Videos: user.hasAdditional3Videos || false,
         hasAllRemainingContent: user.hasAllRemainingContent || false,
-        freeVideoDownloadsUsed: user.freeVideoDownloadsUsed || 0
+        freeVideoDownloadsUsed: user.freeVideoSelectionsUsed || 0
       });
     } catch (error) {
       console.error('Error fetching package access:', error);
