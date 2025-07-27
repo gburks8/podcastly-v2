@@ -7,15 +7,20 @@
     "esModuleInterop": true,
     "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": false,
+    "noEmit": false,
     "strict": false,
     "noImplicitAny": false,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "preserve",
     "skipLibCheck": true,
+    "allowImportingTsExtensions": false,
+    "moduleResolution": "bundler",
     "baseUrl": ".",
-    "types": ["node"],
+    "types": ["node", "vite/client"],
     "paths": {
+      "@/*": ["./client/src/*"],
       "@shared/*": ["./shared/*"]
-    }
+    },
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo"
   }
 }
